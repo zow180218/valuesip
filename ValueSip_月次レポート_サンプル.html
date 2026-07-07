@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>ValueSip 月次レポート（サンプル）</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #f1efe8;
+    color: #2c2c2a;
+  }
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 16mm 14mm;
+  }
+  .header {
+    background: linear-gradient(90deg, #ffffff 0%, #e6f1fb 35%, #85b7eb 70%, #378add 100%);
+    border-radius: 14px;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .header .brand {
+    font-size: 22px;
+    font-weight: 700;
+    color: #042c53;
+  }
+  .header .period {
+    font-size: 13px;
+    color: #0c447c;
+    font-weight: 500;
+  }
+  .title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 4px;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #5f5e5a;
+    margin: 0 0 24px;
+  }
+  .headline-card {
+    background: linear-gradient(135deg, #e6f1fb 0%, #b5d4f4 100%);
+    border-radius: 14px;
+    padding: 22px 26px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .headline-card .num {
+    font-size: 40px;
+    font-weight: 700;
+    color: #042c53;
+  }
+  .headline-card .label {
+    font-size: 14px;
+    color: #0c447c;
+    font-weight: 500;
+  }
+  .headline-card .delta {
+    margin-left: auto;
+    font-size: 13px;
+    color: #3b6d11;
+    font-weight: 500;
+    background: #eaf3de;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 28px;
+  }
+  .stat-box {
+    background: #f7f9fb;
+    border: 1px solid #dbe7f5;
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .stat-box .label {
+    font-size: 11px;
+    color: #5f5e5a;
+    margin-bottom: 6px;
+  }
+  .stat-box .value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #0c447c;
+  }
+  .section-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #85b7eb;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 28px;
+    font-size: 13px;
+  }
+  th {
+    background: #eaf2fb;
+    color: #0c447c;
+    text-align: left;
+    padding: 8px 10px;
+    font-weight: 500;
+  }
+  td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+  }
+  .rank-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #faeeda;
+    color: #633806;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .cta {
+    background: linear-gradient(90deg, #378add 0%, #0c447c 100%);
+    border-radius: 14px;
+    padding: 20px 24px;
+    color: #ffffff;
+  }
+  .cta .cta-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+  .cta .cta-body {
+    font-size: 12px;
+    line-height: 1.6;
+    opacity: 0.95;
+  }
+  .footer {
+    margin-top: 28px;
+    font-size: 10px;
+    color: #999;
+    text-align: center;
+  }
+  .watermark-note {
+    text-align: center;
+    font-size: 11px;
+    color: #a32d2d;
+    margin-bottom: 12px;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="watermark-note">※本レポートはサンプルです。実際の数値ではありません。</div>
+
+  <div class="header">
+    <span class="brand">ValueSip</span>
+    <span class="period">2026年6月度 月次レポート</span>
+  </div>
+
+  <p class="title">道玄坂ハイボール酒場 様</p>
+  <p class="subtitle">ValueSipに掲載いただいている貴店の、今月の閲覧・検索データをお届けします。</p>
+
+  <div class="headline-card">
+    <span class="num">32</span>
+    <span class="label">人が先月、貴店のページを閲覧しました</span>
+    <span class="delta">前月比 +23%</span>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-box">
+      <div class="label">検索結果への表示回数</div>
+      <div class="value">418回</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">価格ピンのクリック数</div>
+      <div class="value">57回</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">ハッピーアワー情報の閲覧数</div>
+      <div class="value">21回</div>
+    </div>
+    <div class="stat-box">
+      <div class="label">お気に入り登録数</div>
+      <div class="value">9件</div>
+    </div>
+  </div>
+
+  <p class="section-title">エリア内順位</p>
+  <p style="font-size:13px; margin: 0 0 24px;">
+    渋谷・道玄坂エリアの「ハイボール」カテゴリで
+    <span class="rank-badge"><i>&#9733;</i>3位 / 24店舗中</span>
+    （前月 5位から2つ順位アップ）
+  </p>
+
+  <p class="section-title">メニュー別の反応</p>
+  <table>
+    <tr>
+      <th>メニュー</th>
+      <th>価格</th>
+      <th>閲覧数</th>
+      <th>クリック数</th>
+      <th>状態</th>
+    </tr>
+    <tr>
+      <td>角ハイボール</td>
+      <td>¥380</td>
+      <td>24</td>
+      <td>18</td>
+      <td>公式認証済み</td>
+    </tr>
+    <tr>
+      <td>生ビール</td>
+      <td>¥350</td>
+      <td>19</td>
+      <td>12</td>
+      <td>公式認証済み</td>
+    </tr>
+    <tr>
+      <td>知多ハイボール</td>
+      <td>¥480</td>
+      <td>11</td>
+      <td>5</td>
+      <td>要確認</td>
+    </tr>
+  </table>
+
+  <div class="cta">
+    <p class="cta-title">プレミアムプランで、もっと見られるお店に</p>
+    <p class="cta-body">
+      検索上位表示・スマレジAPI自動連携で価格を自動更新・詳細な閲覧分析が使えるプレミアムプラン（月額¥8,000〜）。
+      「要確認」表示になっているメニューも、スマレジ連携で自動的に公式認証済みに切り替わります。
+    </p>
+  </div>
+
+  <div class="footer">
+    ValueSip（バリューシップ） ｜ お問い合わせ：担当者名を記載予定 ｜ 本レポートは月初に自動配信されます
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "regions": ["nrt1"],
+  "env": {
+    "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY": "@valuesip-google-maps-api-key",
+    "NEXT_PUBLIC_SUPABASE_URL": "@valuesip-supabase-url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@valuesip-supabase-anon-key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@valuesip-supabase-service-role-key"
+  }
+}
