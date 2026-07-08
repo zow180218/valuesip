@@ -17,6 +17,8 @@ export const SAMPLE_STORES: Store[] = [
     hh_time: "17:00〜19:00",
     data_updated_at: "2026-07-01",
     seats: 60,
+    open_hours: "17:00〜24:00（L.O. 23:30）",
+    closed_days: "不定休",
     menus: [
       { id: "m1", name: "生ビール（中）", category: "beer", brand_tag: "一番搾り", price: 580, hh_price: 380, volume_ml: 400 },
       { id: "m2", name: "角ハイボール", category: "highball", brand_tag: "角", price: 480, hh_price: 280, volume_ml: 350 },

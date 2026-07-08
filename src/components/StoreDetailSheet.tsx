@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { Store } from "@/types/store";
 import { effectiveMenuPrice } from "@/lib/filters";
 
@@ -129,27 +130,39 @@ export default function StoreDetailSheet({
           })}
         </div>
 
-        {/* フッター（住所 + Mapsリンク） */}
-        <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+        {/* フッター（住所 + ボタン群） */}
+        <div className="px-5 py-3 border-t border-gray-100">
+          <div className="flex items-center gap-1.5 mb-2.5 min-w-0">
             <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             </svg>
             <p className="text-xs text-gray-500 truncate">{store.address}</p>
           </div>
-          <a
-            href={mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-shrink-0 flex items-center gap-1 bg-brand-500 text-white text-xs font-semibold px-3 py-2 rounded-full hover:bg-brand-600 transition-colors"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            地図で開く
-          </a>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/stores/${store.store_id}`}
+              className="flex-1 flex items-center justify-center gap-1.5 border border-gray-300 text-gray-700 text-xs font-semibold px-3 py-2 rounded-full hover:bg-gray-50 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              店舗情報
+            </Link>
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 flex items-center justify-center gap-1.5 bg-brand-500 text-white text-xs font-semibold px-3 py-2 rounded-full hover:bg-brand-600 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              地図で開く
+            </a>
+          </div>
         </div>
       </div>
     </div>

@@ -27,6 +27,7 @@ export default function MapView({
   onMapMoved,
 }: MapViewProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+  const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? "DEMO_MAP_ID";
 
   const handleMarkerClick = useCallback(
     (storeId: string) => {
@@ -61,7 +62,7 @@ export default function MapView({
       <Map
         defaultCenter={SHIBUYA_CENTER}
         defaultZoom={DEFAULT_ZOOM}
-        mapId="DEMO_MAP_ID"
+        mapId={mapId}
         gestureHandling="greedy"
         disableDefaultUI={true}
         onDragend={onMapMoved}

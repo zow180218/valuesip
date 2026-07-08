@@ -41,6 +41,8 @@ export interface Store {
   smaregi_id?: string;
   phone?: string;
   seats?: number;
+  open_hours?: string;   // 例: "17:00〜24:00（L.O. 23:30）"
+  closed_days?: string;  // 例: "月曜日" / "不定休" / "年中無休"
 }
 
 /** フィルター状態 */
