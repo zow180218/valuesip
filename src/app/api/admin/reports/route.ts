@@ -34,17 +34,42 @@ export async function GET() {
 
   const supabase = createServiceClient();
 
-  const { data, error } = await supabase
+  // Step 1: pending の price_reports を取得
+  const { data: reports, error: reportsError } = await supabase
     .from("price_reports")
-    .select("*, menus(menu_id, name, price, hh_price, store_id)")
+    .select("*")
     .eq("status", "pending")
     .order("created_at", { ascending: false })
     .limit(100);
 
-  if (error) {
-    console.error("[GET /api/admin/reports]", error);
+  if (reportsError) {
+    console.error("[GET /api/admin/reports] reports fetch error", reportsError);
     return NextResponse.json({ error: "取得に失敗しました" }, { status: 500 });
   }
 
-  return NextResponse.json({ reports: (data ?? []) as unknown as ReportWithMenu[] });
+  if (!reports || reports.length === 0) {
+    return NextResponse.json({ reports: [] });
+  }
+
+  // Step 2: 関連するメニュー情報を取得
+  const menuIds = [...new Set(reports.map((r) => r.menu_id))];
+  const { data: menus, error: menusError } = await supabase
+    .from("menus")
+    .select("menu_id, name, price, hh_price, store_id")
+    .in("menu_id", menuIds);
+
+  if (menusError) {
+    console.error("[GET /api/admin/reports] menus fetch error", menusError);
+    // メニュー取得失敗時も reports は返す（menus を null にして）
+  }
+
+  // Step 3: アプリケーション側で結合
+  const result: ReportWithMenu[] = reports.map((r) => ({
+    ...r,
+    menus: menus?.find((m) => m.menu_id === r.menu_id) ?? null,
+  }));
+
+  console.info(`[GET /api/admin/reports] found ${result.length} pending reports`);
+
+  return NextResponse.json({ reports: result });
 }
