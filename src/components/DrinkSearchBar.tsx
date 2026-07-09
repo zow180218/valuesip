@@ -123,7 +123,7 @@ export default function DrinkSearchBar({
               inputRef.current?.blur();
             }
           }}
-          placeholder="ドリンクを選んで店舗を比較…"
+          placeholder="メニューを選んで店舗を比較…"
           className="flex-1 text-sm text-gray-800 placeholder-gray-400 outline-none bg-transparent"
         />
         {inputText && (
@@ -153,7 +153,7 @@ export default function DrinkSearchBar({
         <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-float overflow-hidden z-30 max-h-64 overflow-y-auto">
           {!q && (
             <div className="px-4 py-2 text-[11px] text-gray-400 border-b border-gray-100">
-              取扱ドリンク一覧
+              取扱メニュー一覧
             </div>
           )}
           {suggestions.map((name, idx) => {
