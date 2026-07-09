@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Store, Menu } from "@/types/store";
@@ -399,7 +399,8 @@ export default function StoreDetailPage() {
                         menu.hh_price === currentPrice;
 
                       return (
-                        <div key={menu.id} className="flex items-center px-4 py-3.5 gap-3">
+                        <Fragment key={menu.id}>
+                        <div className="flex items-center px-4 py-3.5 gap-3">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm text-gray-800 font-medium">{menu.name}</p>
                             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -442,6 +443,7 @@ export default function StoreDetailPage() {
                         </div>
                         {/* 価格投票・報告 */}
                         <PriceVoting menuId={menu.id} menuName={menu.name} />
+                        </Fragment>
                       );
                     })}
                   </div>
