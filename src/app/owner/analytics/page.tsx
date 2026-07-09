@@ -1,51 +1,76 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import type { StoreAnalytics } from "@/app/api/analytics/store/[storeId]/route";
 
-const WEEKLY_PV = [
-  { day: "月", pv: 38 },
-  { day: "火", pv: 52 },
-  { day: "水", pv: 44 },
-  { day: "木", pv: 61 },
-  { day: "金", pv: 78 },
-  { day: "土", pv: 89 },
-  { day: "日", pv: 57 },
-];
-
-const MAX_PV = Math.max(...WEEKLY_PV.map((d) => d.pv));
-
-const FUNNEL = [
-  { label: "マップ閲覧", count: 312, pct: 100, color: "bg-blue-200" },
-  { label: "店舗タップ（ピン）", count: 214, pct: 68, color: "bg-blue-300" },
-  { label: "詳細シート展開", count: 156, pct: 50, color: "bg-blue-400" },
-  { label: "地図クリック（経路）", count: 87, pct: 28, color: "bg-blue-500" },
-];
-
-const FLOW_IN = [
-  { label: "検索フィルター経由", pct: 48 },
-  { label: "地図ピン直接タップ", pct: 33 },
-  { label: "URL直接アクセス", pct: 19 },
-];
-
-const HOURLY = [
-  { hour: "17", pv: 42 },
-  { hour: "18", pv: 89 },
-  { hour: "19", pv: 103 },
-  { hour: "20", pv: 78 },
-  { hour: "21", pv: 55 },
-  { hour: "22", pv: 34 },
-  { hour: "23", pv: 17 },
-];
-const MAX_HOURLY = Math.max(...HOURLY.map((h) => h.pv));
+// デモ用固定店舗ID（本番では認証ユーザーの store_id を使用）
+const DEMO_STORE_ID = "shib-001";
 
 type Period = "7d" | "30d";
 
+// 日付文字列を「M/D」形式に変換
+function fmtDate(iso: string, shortMode: boolean): string {
+  const d = new Date(iso + "T00:00:00");
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  if (shortMode) return day % 5 === 0 || day === 1 ? `${m}/${day}` : "";
+  return `${m}/${day}`;
+}
+
+// 前期間比の変化率
+function deltaStr(curr: number, prev: number): { text: string; up: boolean } {
+  if (prev === 0) return { text: "—", up: true };
+  const pct = Math.round(((curr - prev) / prev) * 100);
+  return { text: `${pct > 0 ? "↑" : "↓"} ${Math.abs(pct)}% 前期比`, up: pct >= 0 };
+}
+
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState<Period>("7d");
+  const [data, setData] = useState<StoreAnalytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(async (p: Period) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const storeId =
+        (typeof window !== "undefined"
+          ? localStorage.getItem("ownerStoreId")
+          : null) ?? DEMO_STORE_ID;
+      const res = await fetch(`/api/analytics/store/${storeId}?period=${p}`);
+      if (!res.ok) throw new Error("取得失敗");
+      const json: StoreAnalytics = await res.json();
+      setData(json);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "エラーが発生しました");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData(period);
+  }, [period, fetchData]);
+
+  // バーチャート用最大値
+  const maxDaily  = data ? Math.max(...data.daily.map((d) => d.count), 1) : 1;
+  const maxHourly = data ? Math.max(...data.hourly.map((h) => h.count), 1) : 1;
+
+  // 夕方〜深夜帯のみ表示（17〜23時）
+  const eveningHours = data?.hourly.filter((h) => h.hour >= 17 && h.hour <= 23) ?? [];
+
+  const pvDelta = data ? deltaStr(data.total_views, data.prev_total_views) : null;
+
+  // 地図クリック率（map_clicks / total_views）
+  const mapClickRate =
+    data && data.total_views > 0
+      ? Math.round((data.map_clicks / data.total_views) * 100)
+      : 0;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">アクセス分析</h1>
@@ -66,145 +91,181 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* KPI カード */}
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: "週間PV", value: period === "7d" ? 312 : 1240, delta: 18, color: "text-green-600" },
-          { label: "地図クリック", value: period === "7d" ? 87 : 342, delta: 5, color: "text-green-600" },
-          { label: "HH時間帯率", value: null, pct: 62, color: "text-amber-600" },
-        ].map((kpi, i) => (
-          <div key={i} className="bg-white rounded-2xl border border-gray-100 p-4">
-            <p className="text-xs text-gray-500 font-medium">{kpi.label}</p>
-            {kpi.value !== null ? (
-              <>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.value.toLocaleString()}</p>
-                <p className={`text-xs font-semibold mt-1 ${kpi.color}`}>
-                  ↑ {kpi.delta}% 先週比
+      {/* ローディング */}
+      {loading && (
+        <div className="flex items-center justify-center py-20 text-gray-400 text-sm animate-pulse">
+          データを集計中…
+        </div>
+      )}
+
+      {/* エラー */}
+      {!loading && error && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-700">
+          ❌ {error}
+        </div>
+      )}
+
+      {!loading && !error && data && (
+        <>
+          {/* KPI カード */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white rounded-2xl border border-gray-100 p-4">
+              <p className="text-xs text-gray-500 font-medium">ページビュー</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">
+                {data.total_views.toLocaleString()}
+              </p>
+              {pvDelta && (
+                <p className={`text-xs font-semibold mt-1 ${pvDelta.up ? "text-green-600" : "text-red-500"}`}>
+                  {pvDelta.text}
                 </p>
-              </>
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 p-4">
+              <p className="text-xs text-gray-500 font-medium">地図クリック率</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{mapClickRate}%</p>
+              <p className="text-xs text-gray-400 mt-1">{data.map_clicks} 件の経路確認</p>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 p-4">
+              <p className="text-xs text-gray-500 font-medium">HH時間帯率</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{data.hh_hour_rate}%</p>
+              <p className="text-xs text-amber-500 font-semibold mt-1">17〜19時のアクセス</p>
+            </div>
+          </div>
+
+          {/* 日別PVバーチャート */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <h2 className="text-sm font-bold text-gray-900 mb-4">
+              日別ページビュー（直近{period === "7d" ? "7" : "30"}日）
+            </h2>
+            {data.total_views === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-8">
+                まだデータがありません。店舗詳細ページへのアクセスが蓄積されると表示されます。
+              </p>
             ) : (
-              <>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{kpi.pct}%</p>
-                <p className={`text-xs font-semibold mt-1 ${kpi.color}`}>
-                  HH時間帯のアクセス
-                </p>
-              </>
+              <div className="flex items-end justify-between gap-1 h-32">
+                {data.daily.map((d) => {
+                  const label = fmtDate(d.date, period === "30d");
+                  return (
+                    <div
+                      key={d.date}
+                      className="flex flex-col items-center gap-1 flex-1 min-w-0"
+                      title={`${d.date}: ${d.count}PV`}
+                    >
+                      {d.count > 0 && (
+                        <span className="text-[9px] text-gray-500 font-medium">{d.count}</span>
+                      )}
+                      <div
+                        className="w-full rounded-t-sm bg-blue-400 transition-all"
+                        style={{ height: `${(d.count / maxDaily) * 100}%`, minHeight: d.count > 0 ? "2px" : "0" }}
+                      />
+                      <span className="text-[9px] text-gray-400 font-medium truncate w-full text-center">
+                        {label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
-        ))}
-      </div>
 
-      {/* 日別 PV バーチャート */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <h2 className="text-sm font-bold text-gray-900 mb-4">日別ページビュー（直近7日）</h2>
-        <div className="flex items-end justify-between gap-2 h-32">
-          {WEEKLY_PV.map((d) => (
-            <div key={d.day} className="flex flex-col items-center gap-1.5 flex-1">
-              <span className="text-[10px] text-gray-500 font-medium">{d.pv}</span>
-              <div
-                className="w-full rounded-t-md bg-blue-400 transition-all"
-                style={{ height: `${(d.pv / MAX_PV) * 100}%` }}
-              />
-              <span className="text-[10px] text-gray-400 font-medium">{d.day}</span>
+          {/* 時間帯別アクセス */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-gray-900">時間帯別アクセス（夕方〜深夜）</h2>
+              <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">
+                HH 17–19時
+              </span>
             </div>
-          ))}
-        </div>
-        <p className="text-[10px] text-gray-400 mt-3 text-right">※ デモデータ</p>
-      </div>
+            {eveningHours.every((h) => h.count === 0) ? (
+              <p className="text-sm text-gray-400 text-center py-6">データなし</p>
+            ) : (
+              <div className="flex items-end justify-between gap-2 h-24">
+                {eveningHours.map((h) => {
+                  const isHH = h.hour >= 17 && h.hour <= 19;
+                  return (
+                    <div key={h.hour} className="flex flex-col items-center gap-1.5 flex-1">
+                      {h.count > 0 && (
+                        <span className="text-[10px] text-gray-500 font-medium">{h.count}</span>
+                      )}
+                      <div
+                        className={`w-full rounded-t-md transition-all ${isHH ? "bg-amber-400" : "bg-gray-200"}`}
+                        style={{ height: `${(h.count / maxHourly) * 100}%`, minHeight: h.count > 0 ? "2px" : "0" }}
+                      />
+                      <span className={`text-[10px] font-medium ${isHH ? "text-amber-600" : "text-gray-400"}`}>
+                        {h.hour}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
-      {/* 時間帯別アクセス（HH強調） */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-bold text-gray-900">時間帯別アクセス（夕方〜深夜）</h2>
-          <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full">
-            HH 17–19時
-          </span>
-        </div>
-        <div className="flex items-end justify-between gap-2 h-24">
-          {HOURLY.map((h) => {
-            const isHH = parseInt(h.hour) >= 17 && parseInt(h.hour) <= 19;
-            return (
-              <div key={h.hour} className="flex flex-col items-center gap-1.5 flex-1">
-                <span className="text-[10px] text-gray-500 font-medium">{h.pv}</span>
-                <div
-                  className={`w-full rounded-t-md transition-all ${isHH ? "bg-amber-400" : "bg-gray-200"}`}
-                  style={{ height: `${(h.pv / MAX_HOURLY) * 100}%` }}
-                />
-                <span className={`text-[10px] font-medium ${isHH ? "text-amber-600" : "text-gray-400"}`}>
-                  {h.hour}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* コンバージョンファネル */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <h2 className="text-sm font-bold text-gray-900 mb-4">コンバージョンファネル</h2>
-        <div className="space-y-2.5">
-          {FUNNEL.map((step, i) => (
-            <div key={i}>
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-gray-700 font-medium">{step.label}</span>
-                <span className="text-gray-500">{step.count} <span className="text-gray-400">({step.pct}%)</span></span>
-              </div>
-              <div className="h-5 bg-gray-50 rounded-lg overflow-hidden">
-                <div
-                  className={`h-full ${step.color} rounded-lg transition-all`}
-                  style={{ width: `${step.pct}%` }}
-                />
-              </div>
+          {/* アクション別カウント */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <h2 className="text-sm font-bold text-gray-900 mb-4">ユーザーアクション</h2>
+            <div className="space-y-3">
+              {[
+                { label: "店舗ページ閲覧", count: data.total_views, icon: "👀", color: "bg-blue-400" },
+                { label: "地図・経路クリック", count: data.map_clicks, icon: "🗺️", color: "bg-green-400" },
+                { label: "電話タップ",         count: data.phone_taps, icon: "📞", color: "bg-purple-400" },
+              ].map((item) => {
+                const pct = data.total_views > 0 ? (item.count / data.total_views) * 100 : 0;
+                return (
+                  <div key={item.label} className="flex items-center gap-3">
+                    <span className="text-base w-6 flex-shrink-0">{item.icon}</span>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="text-gray-700 font-medium">{item.label}</span>
+                        <span className="text-gray-500 font-bold">{item.count} 件</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full ${item.color} rounded-full transition-all`}
+                          style={{ width: `${Math.min(pct, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          ))}
-        </div>
-        <div className="mt-3 pt-3 border-t border-gray-50">
-          <p className="text-xs text-gray-500">
-            地図クリック率（経路案内）: <span className="font-bold text-gray-800">28%</span>
-          </p>
-        </div>
-      </div>
+          </div>
 
-      {/* 流入元 */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <h2 className="text-sm font-bold text-gray-900 mb-4">流入元（タップ経路）</h2>
-        <div className="space-y-3">
-          {FLOW_IN.map((item, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div className="w-28 flex-shrink-0">
-                <p className="text-xs text-gray-600 font-medium">{item.label}</p>
-              </div>
-              <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-400 rounded-full"
-                  style={{ width: `${item.pct}%` }}
-                />
-              </div>
-              <span className="text-xs font-bold text-gray-700 w-8 text-right">{item.pct}%</span>
+          {/* 改善ヒント */}
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-3">
+            <h2 className="text-sm font-bold text-blue-900">💡 改善ヒント</h2>
+            <div className="space-y-2">
+              {data.hh_hour_rate >= 40 && (
+                <p className="text-xs text-blue-700 flex gap-2">
+                  <span className="flex-shrink-0 text-blue-400">•</span>
+                  HH時間帯（17〜19時）のアクセスが{data.hh_hour_rate}%を占めています。ハッピーアワーのメニュー情報を充実させると転換率が上がります。
+                </p>
+              )}
+              {mapClickRate < 20 && data.total_views > 10 && (
+                <p className="text-xs text-blue-700 flex gap-2">
+                  <span className="flex-shrink-0 text-blue-400">•</span>
+                  地図クリック率が{mapClickRate}%です。住所・席数情報の充実で改善できます。
+                </p>
+              )}
+              {mapClickRate >= 20 && (
+                <p className="text-xs text-blue-700 flex gap-2">
+                  <span className="flex-shrink-0 text-blue-400">•</span>
+                  地図クリック率{mapClickRate}%は良好です。来店動機につながっています。
+                </p>
+              )}
+              {data.total_views === 0 && (
+                <p className="text-xs text-blue-700 flex gap-2">
+                  <span className="flex-shrink-0 text-blue-400">•</span>
+                  まだデータが蓄積されていません。ユーザーが店舗ページを閲覧するとここにデータが表示されます。
+                </p>
+              )}
             </div>
-          ))}
-        </div>
-        <p className="text-xs text-gray-400 mt-4">
-          ヒント: フィルター検索経由が最多。タグ設定を最適化するとさらに表示が増える可能性があります。
-        </p>
-      </div>
-
-      {/* 改善サジェスト */}
-      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-3">
-        <h2 className="text-sm font-bold text-blue-900">💡 改善ヒント</h2>
-        <div className="space-y-2">
-          {[
-            "HH 19時のアクセスが最多 → 19時台の限定メニューをメニュー管理で追加すると転換率が上がる可能性があります",
-            "地図クリック率が 28% → 店舗写真や席数情報の充実で改善できます（近日対応予定）",
-            "フィルター経由が 48% → ビアホールタグの最適化でさらに表示回数が増加します",
-          ].map((tip, i) => (
-            <p key={i} className="text-xs text-blue-700 flex gap-2">
-              <span className="flex-shrink-0 text-blue-400">•</span>
-              {tip}
-            </p>
-          ))}
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

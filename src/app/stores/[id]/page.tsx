@@ -57,6 +57,17 @@ export default function StoreDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>("info");
   const [hhEnabled, setHhEnabled] = useState(true);
 
+  // ── アナリティクスイベント送信 ──
+  const trackEvent = (event_type: string) => {
+    if (!storeId) return;
+    // fire-and-forget（失敗しても UI に影響しない）
+    fetch("/api/analytics/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ store_id: storeId, event_type }),
+    }).catch(() => {});
+  };
+
   useEffect(() => {
     const fetchStore = async () => {
       setLoading(true);
@@ -81,6 +92,12 @@ export default function StoreDetailPage() {
 
     if (storeId) fetchStore();
   }, [storeId]);
+
+  // 店舗データ取得後に store_view イベントを送信
+  useEffect(() => {
+    if (store) trackEvent("store_view");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [store]);
 
   const mapsUrl = store
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
@@ -460,6 +477,7 @@ export default function StoreDetailPage() {
           {store.phone && (
             <a
               href={`tel:${store.phone}`}
+              onClick={() => trackEvent("phone_tap")}
               className="flex items-center justify-center gap-1.5 border border-gray-300 text-gray-700 text-sm font-semibold px-4 py-3 rounded-2xl hover:bg-gray-50 transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -473,6 +491,7 @@ export default function StoreDetailPage() {
             href={mapsRouteUrl}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackEvent("map_click")}
             className="flex-1 flex items-center justify-center gap-2 bg-brand-500 text-white text-sm font-bold py-3 rounded-2xl hover:bg-brand-600 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
