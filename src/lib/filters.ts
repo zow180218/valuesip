@@ -54,19 +54,25 @@ export function computeStorePinData(
 ): StorePinData | null {
   const { searchText, excludeText, minBudget, maxBudget, hhEnabled } = filter;
 
+  const q = searchText.trim().toLowerCase();
+
+  // 店舗名マッチチェック
+  const storeNameMatches = q ? store.name.toLowerCase().includes(q) : false;
+
   // 検索ワードに一致し、除外ワードに一致しないメニューを抽出
   const matchedMenus = store.menus.filter(
     (m) =>
       menuMatchesSearch(m, searchText) && !menuMatchesExclude(m, excludeText)
   );
 
-  // 一致メニューが0件 → 検索ワードありの場合は非表示対象（nullを返す）
-  if (searchText.trim() && matchedMenus.length === 0) {
+  // 検索ワードあり → メニューも店舗名もマッチしない場合は非表示
+  if (q && matchedMenus.length === 0 && !storeNameMatches) {
     return null;
   }
 
   // 実効価格リストを計算
-  const targetMenus = searchText.trim() ? matchedMenus : store.menus;
+  // 店舗名のみマッチ（メニューマッチなし）→ 全メニューを対象
+  const targetMenus = q && matchedMenus.length > 0 ? matchedMenus : store.menus;
   const prices = targetMenus.map((m) => effectiveMenuPrice(m, hhEnabled));
 
   if (prices.length === 0) return null;

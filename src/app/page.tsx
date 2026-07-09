@@ -18,6 +18,11 @@ export default function Home() {
   const [stores, setStores] = useState<Store[]>(SAMPLE_STORES);
   const [isLoadingStores, setIsLoadingStores] = useState(false);
 
+  // ── マップパン（サジェスト選択時） ──
+  const [mapCenter, setMapCenter] = useState<
+    { lat: number; lng: number; key: string } | undefined
+  >(undefined);
+
   // APIから最新データを取得（Supabase設定済みの場合のみ有効）
   const fetchStores = useCallback(async (area = "shibuya") => {
     setIsLoadingStores(true);
@@ -66,6 +71,16 @@ export default function Home() {
     setIsFilterOpen(false);
   };
 
+  // サジェストから店舗を選択 → 選択 + マップパン
+  const handleStoreSuggestSelect = (storeId: string) => {
+    const store = stores.find((s) => s.store_id === storeId);
+    setSelectedStoreId(storeId);
+    setIsFilterOpen(false);
+    if (store) {
+      setMapCenter({ lat: store.lat, lng: store.lng, key: storeId + "-" + Date.now() });
+    }
+  };
+
   const handleFilterChange = <K extends keyof FilterState>(
     key: K,
     value: FilterState[K]
@@ -84,13 +99,16 @@ export default function Home() {
           onMapMoved={() => {
             if (selectedStoreId) setSelectedStoreId(null);
           }}
+          centerOn={mapCenter}
         />
       </div>
 
       {/* ② 上部検索バー（フローティング） */}
       <TopSearchBar
+        stores={stores}
         searchText={filter.searchText}
         onSearchChange={(v) => handleFilterChange("searchText", v)}
+        onStoreSuggestSelect={handleStoreSuggestSelect}
         hhEnabled={filter.hhEnabled}
         onHhToggle={() =>
           handleFilterChange("hhEnabled", !filter.hhEnabled)

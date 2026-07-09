@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect } from "react";
 import {
   APIProvider,
   Map,
   AdvancedMarker,
+  useMap,
 } from "@vis.gl/react-google-maps";
 import type { StorePinData } from "@/types/store";
 import PricePin from "./PricePin";
@@ -14,17 +15,33 @@ interface MapViewProps {
   selectedStoreId: string | null;
   onStoreSelect: (storeId: string) => void;
   onMapMoved?: () => void;
+  centerOn?: { lat: number; lng: number; key: string };
 }
 
 // 渋谷駅を初期中心に
 const SHIBUYA_CENTER = { lat: 35.6580, lng: 139.7016 };
 const DEFAULT_ZOOM = 15;
 
+// サジェスト選択時にマップをパンするコンポーネント（Map の子として useMap() を使用）
+function MapPanner({ centerOn }: { centerOn?: { lat: number; lng: number; key: string } }) {
+  const map = useMap();
+  useEffect(() => {
+    if (map && centerOn) {
+      map.panTo({ lat: centerOn.lat, lng: centerOn.lng });
+      map.setZoom(17);
+    }
+    // key が変わったときだけ実行
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, centerOn?.key]);
+  return null;
+}
+
 export default function MapView({
   pinDataList,
   selectedStoreId,
   onStoreSelect,
   onMapMoved,
+  centerOn,
 }: MapViewProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? "DEMO_MAP_ID";
@@ -67,10 +84,8 @@ export default function MapView({
         disableDefaultUI={true}
         onDragend={onMapMoved}
         className="w-full h-full"
-        style={{
-          // マップのスタイルをフラットに（情報過多を避ける）
-        }}
       >
+        <MapPanner centerOn={centerOn} />
         {pinDataList.map((pinData) => (
           <AdvancedMarker
             key={pinData.store.store_id}
