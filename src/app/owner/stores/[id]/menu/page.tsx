@@ -50,14 +50,36 @@ export default function MenuManagementPage() {
   };
 
   // 編集保存
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editingId) return;
+    // ローカル state を即時更新（楽観的UI）
     setMenus((prev) =>
       prev.map((m) => (m.id === editingId ? { ...m, ...editForm } as Menu : m))
     );
     setEditingId(null);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+
+    // DB に非同期で保存（UUID 形式の menu_id のみ）
+    if (/^[0-9a-f-]{36}$/.test(editingId)) {
+      try {
+        await fetch(`/api/owner/menus/${editingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: editForm.name,
+            price: editForm.price,
+            hh_price: editForm.hh_price ?? null,
+            category: editForm.category,
+            brand_tag: editForm.brand_tag ?? null,
+            volume_ml: editForm.volume_ml ?? null,
+            smaregi_product_id: editForm.smaregi_product_id ?? null,
+          }),
+        });
+      } catch (err) {
+        console.warn("[saveEdit] API エラー:", err);
+      }
+    }
   };
 
   // 削除
@@ -256,6 +278,19 @@ export default function MenuManagementPage() {
                       onChange={(e) => setEditForm((f) => ({ ...f, brand_tag: e.target.value || undefined }))}
                       placeholder="例: サッポロ"
                       className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm mt-0.5 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 font-semibold flex items-center gap-1">
+                      スマレジ商品ID
+                      <span className="text-gray-300 font-normal">（POS連携用）</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.smaregi_product_id ?? ""}
+                      onChange={(e) => setEditForm((f) => ({ ...f, smaregi_product_id: e.target.value || undefined }))}
+                      placeholder="例: 100001"
+                      className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-sm mt-0.5 font-mono focus:outline-none focus:ring-1 focus:ring-red-300"
                     />
                   </div>
                   <div className="flex gap-2 pt-1">

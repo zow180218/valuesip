@@ -1,6 +1,6 @@
 /**
  * Supabase Database 型定義
- * 最終更新: 2026-07-09（Relationships[] 追加 — supabase-js v2.45+ 型推論修正）
+ * 最終更新: 2026-07-09（Relationships[] 追加 + price_votes / price_reports 追加）
  */
 export type MenuCategory = "beer" | "highball" | "shochu" | "wine" | "cocktail" | "soft" | "other";
 
@@ -35,6 +35,33 @@ export interface Database {
         };
         Insert: Omit<Database["public"]["Tables"]["menus"]["Row"], "menu_id" | "created_at" | "updated_at">;
         Update: Partial<Database["public"]["Tables"]["menus"]["Insert"]> & { updated_at?: string; };
+        Relationships: [];
+      };
+      price_votes: {
+        Row: {
+          vote_id: string;
+          menu_id: string;
+          user_fingerprint: string;
+          is_accurate: boolean;
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["price_votes"]["Row"], "vote_id" | "created_at">;
+        Update: Partial<Database["public"]["Tables"]["price_votes"]["Insert"]>;
+        Relationships: [];
+      };
+      price_reports: {
+        Row: {
+          report_id: string;
+          menu_id: string;
+          reported_price: number;
+          reported_hh_price: number | null;
+          note: string | null;
+          user_fingerprint: string;
+          status: "pending" | "approved" | "rejected";
+          created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["price_reports"]["Row"], "report_id" | "created_at">;
+        Update: Partial<Database["public"]["Tables"]["price_reports"]["Insert"]>;
         Relationships: [];
       };
     };

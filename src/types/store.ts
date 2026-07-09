@@ -24,6 +24,7 @@ export interface Menu {
   price: number;              // 通常価格（税込・円）
   hh_price?: number;          // HH価格（税込・円）
   volume_ml?: number;         // 容量（ml）
+  smaregi_product_id?: string; // スマレジ商品ID（Webhook価格同期用）
 }
 
 /** 店舗レコード */

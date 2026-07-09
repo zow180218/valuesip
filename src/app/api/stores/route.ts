@@ -104,6 +104,7 @@ export async function GET(request: NextRequest) {
       price: row.price,
       hh_price: row.hh_price ?? undefined,
       volume_ml: row.volume_ml ?? undefined,
+      smaregi_product_id: (row as typeof row & { smaregi_product_id?: string | null }).smaregi_product_id ?? undefined,
     });
     return acc;
   }, {});

@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { Store, Menu } from "@/types/store";
 import { SAMPLE_STORES } from "@/data/stores";
 import { effectiveMenuPrice } from "@/lib/filters";
+import PriceVoting from "@/components/PriceVoting";
 
 type Tab = "info" | "menu";
 
@@ -439,6 +440,8 @@ export default function StoreDetailPage() {
                             )}
                           </div>
                         </div>
+                        {/* 価格投票・報告 */}
+                        <PriceVoting menuId={menu.id} menuName={menu.name} />
                       );
                     })}
                   </div>
