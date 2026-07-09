@@ -52,7 +52,7 @@ export async function GET() {
   }
 
   // Step 2: 関連するメニュー情報を取得
-  const menuIds = [...new Set(reports.map((r) => r.menu_id))];
+  const menuIds = Array.from(new Set(reports.map((r) => r.menu_id)));
   const { data: menus, error: menusError } = await supabase
     .from("menus")
     .select("menu_id, name, price, hh_price, store_id")
