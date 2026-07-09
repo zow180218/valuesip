@@ -19,9 +19,9 @@ export default function DrinkSearchBar({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // 全店舗のメニュー名を集約・重複除去・五十音順ソート
-  const allDrinkNames = [
-    ...new Set(stores.flatMap((s) => s.menus.map((m) => m.name))),
-  ].sort((a, b) => a.localeCompare(b, "ja"));
+  const allDrinkNames = Array.from(
+    new Set(stores.flatMap((s) => s.menus.map((m) => m.name)))
+  ).sort((a, b) => a.localeCompare(b, "ja"));
 
   // ドリンク名 → 取扱店舗数マップ
   const storeCountMap = new Map<string, number>();
