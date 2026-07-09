@@ -12,6 +12,7 @@ const navItems = [
   { label: "メニュー管理", href: `/owner/stores/${DEMO_STORE_ID}/menu` },
   { label: "POS連携", href: "/owner/pos" },
   { label: "分析", href: "/owner/analytics" },
+  { label: "価格報告", href: "/owner/admin/reports" },
 ];
 
 export default function OwnerNav() {
