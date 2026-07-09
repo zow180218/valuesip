@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
+import type { Database, MenuCategory } from "@/types/database";
+
+type MenuUpdate = Database["public"]["Tables"]["menus"]["Update"];
 
 // ─────────────────────────────────────────────────────────────
 // PATCH /api/owner/menus/:menuId
@@ -11,7 +14,7 @@ interface PatchMenuBody {
   name?: string;
   price?: number;
   hh_price?: number | null;
-  category?: string;
+  category?: MenuCategory;
   brand_tag?: string | null;
   volume_ml?: number | null;
   smaregi_product_id?: string | null;
@@ -41,7 +44,7 @@ export async function PATCH(
   const now = new Date().toISOString();
 
   // 更新対象フィールドのみ含める
-  const updatePayload: Record<string, unknown> = { updated_at: now };
+  const updatePayload: MenuUpdate = { updated_at: now };
   if (body.name !== undefined) updatePayload.name = body.name;
   if (body.price !== undefined) updatePayload.price = body.price;
   if (body.hh_price !== undefined) updatePayload.hh_price = body.hh_price;
