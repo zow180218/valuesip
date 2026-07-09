@@ -74,7 +74,11 @@ export default function StoreDetailSheet({
         </div>
 
         {/* メニューリスト */}
-        <div className="flex-1 overflow-y-auto px-5 py-3">
+        <div
+          className="flex-1 overflow-y-auto overscroll-contain touch-pan-y px-5 py-3"
+          onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
           {sortedMenus.map((menu) => {
             const currentPrice = effectiveMenuPrice(menu, hhEnabled);
             const isHHApplied = hhEnabled && menu.hh_price !== undefined && menu.hh_price === currentPrice;
