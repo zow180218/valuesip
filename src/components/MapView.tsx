@@ -16,6 +16,7 @@ interface MapViewProps {
   onStoreSelect: (storeId: string) => void;
   onMapMoved?: () => void;
   centerOn?: { lat: number; lng: number; key: string };
+  userLocation?: { lat: number; lng: number } | null;
 }
 
 // 渋谷駅を初期中心に
@@ -42,6 +43,7 @@ export default function MapView({
   onStoreSelect,
   onMapMoved,
   centerOn,
+  userLocation,
 }: MapViewProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID ?? "DEMO_MAP_ID";
@@ -86,6 +88,19 @@ export default function MapView({
         className="w-full h-full"
       >
         <MapPanner centerOn={centerOn} />
+
+        {/* 現在地マーカー（青い●） */}
+        {userLocation && (
+          <AdvancedMarker position={userLocation} zIndex={200}>
+            <div className="relative flex items-center justify-center">
+              {/* 外側の波紋 */}
+              <div className="absolute w-10 h-10 rounded-full bg-blue-400/30 animate-ping" />
+              {/* 内側の青い● */}
+              <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow-lg" />
+            </div>
+          </AdvancedMarker>
+        )}
+
         {pinDataList.map((pinData) => (
           <AdvancedMarker
             key={pinData.store.store_id}
