@@ -27,8 +27,33 @@ export default function Home() {
   // ── 現在地 ──
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  // ── 表示モード ──
-  const [viewMode, setViewMode] = useState<"map" | "list">("map");
+  // ── 表示モード（URLの ?compare= を初回レンダーで読んで初期化） ──
+  const [viewMode, setViewMode] = useState<"map" | "list">(() => {
+    if (typeof window === "undefined") return "map";
+    return new URLSearchParams(window.location.search).has("compare") ? "list" : "map";
+  });
+
+  // ── ドリンク比較（URLから初期化 → useEffect競合を回避） ──
+  const [compareDrink, setCompareDrink] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).get("compare") ?? null;
+  });
+
+  // compareDrink変化時にURLを更新（URLSearchParams が自動エンコード）
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (compareDrink) {
+      params.set("compare", compareDrink);
+    } else {
+      params.delete("compare");
+    }
+    const newSearch = params.toString();
+    window.history.replaceState(
+      {},
+      "",
+      newSearch ? `${window.location.pathname}?${newSearch}` : window.location.pathname
+    );
+  }, [compareDrink]);
 
   // 起動時にGPS取得
   useEffect(() => {
@@ -152,6 +177,8 @@ export default function Home() {
           selectedStoreId={selectedStoreId}
           onStoreSelect={handleListStoreSelect}
           hhEnabled={filter.hhEnabled}
+          compareDrink={compareDrink}
+          onCompareDrinkChange={setCompareDrink}
         />
       )}
 
