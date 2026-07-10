@@ -20,10 +20,19 @@ export interface Database {
           opening_hours: Record<string, string> | null; open_hours: string | null;
           closed_days: string | null; hh_hours: string | null; phone: string | null;
           website_url: string | null; seats: number | null; smaregi_id: string | null;
-          is_active: boolean; verified: boolean; created_at: string; updated_at: string;
+          is_active: boolean; verified: boolean; verified_at: string | null;
+          created_at: string; updated_at: string;
         };
         Insert: Omit<Database["public"]["Tables"]["stores"]["Row"], "created_at" | "updated_at">;
         Update: Partial<Database["public"]["Tables"]["stores"]["Insert"]> & { updated_at?: string; };
+        Relationships: [];
+      };
+      owner_store_map: {
+        Row: {
+          id: string; user_id: string; store_id: string; created_at: string;
+        };
+        Insert: Omit<Database["public"]["Tables"]["owner_store_map"]["Row"], "id" | "created_at">;
+        Update: Partial<Database["public"]["Tables"]["owner_store_map"]["Insert"]>;
         Relationships: [];
       };
       menus: {

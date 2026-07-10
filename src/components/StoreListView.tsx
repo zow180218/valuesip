@@ -216,6 +216,13 @@ export default function StoreListView({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <p className="text-sm font-bold text-gray-900 truncate">{store.name}</p>
+                  {store.is_verified && (
+                    <span title="公式認証店舗" className="flex-shrink-0">
+                      <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 1L3 5v6c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l5.59-5.59L18 8l-7 7z"/>
+                      </svg>
+                    </span>
+                  )}
                   {store.hh_available && store.hh_time && (
                     <span className="text-[10px] bg-gray-900 text-amber-400 font-bold px-1.5 py-0.5 rounded-full flex-shrink-0">
                       HH {store.hh_time}

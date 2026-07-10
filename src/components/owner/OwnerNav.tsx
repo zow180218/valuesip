@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
-// デモ用固定店舗ID（本番では認証ユーザーのstore_idを使用）
+// デモ用固定店舗ID（本番では owner_store_map から取得）
 const DEMO_STORE_ID = "shib-001";
 
 const navItems = [
@@ -18,17 +20,18 @@ const navItems = [
 export default function OwnerNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const [userEmail, setUserEmail] = useState<string>("");
 
-  const handleLogout = () => {
-    localStorage.removeItem("ownerToken");
-    localStorage.removeItem("ownerStoreName");
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserEmail(session?.user?.email ?? "");
+    });
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     router.push("/owner/login");
   };
-
-  const storeName =
-    typeof window !== "undefined"
-      ? (localStorage.getItem("ownerStoreName") ?? "ValueSip Owner")
-      : "ValueSip Owner";
 
   return (
     <header className="bg-gray-900 text-white sticky top-0 z-30">
@@ -36,7 +39,7 @@ export default function OwnerNav() {
       <div className="flex items-center justify-between px-5 py-3 border-b border-gray-800">
         <div>
           <div className="text-sm font-bold tracking-tight">ValueSip Owner</div>
-          <div className="text-xs text-gray-400 mt-0.5">{storeName}</div>
+          <div className="text-xs text-gray-400 mt-0.5">{userEmail || "オーナーポータル"}</div>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs bg-green-500 text-white px-2.5 py-0.5 rounded-full font-semibold">

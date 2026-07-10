@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import OwnerNav from "@/components/owner/OwnerNav";
+import { supabase } from "@/lib/supabase";
 
 export default function OwnerLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -10,12 +11,30 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("ownerToken");
-    if (!token && pathname !== "/owner/login") {
-      router.replace("/owner/login");
-    } else {
+    // ログインページはチェック不要
+    if (pathname === "/owner/login") {
       setReady(true);
+      return;
     }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        router.replace("/owner/login");
+      } else {
+        setReady(true);
+      }
+    });
+
+    // ログイン状態の変化を監視（別タブでログアウトした場合など）
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session && pathname !== "/owner/login") {
+          router.replace("/owner/login");
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, [pathname, router]);
 
   // ログインページはナビなし

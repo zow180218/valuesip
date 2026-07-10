@@ -80,10 +80,19 @@ export default function BottomCardStrip({
                   : "hover:shadow-lg"
               } ${!isInBudget ? "opacity-50" : ""}`}
             >
-              {/* 店名 */}
-              <p className="text-sm font-bold text-gray-800 truncate mb-1">
-                {store.name}
-              </p>
+              {/* 店名 + 公式認証バッジ */}
+              <div className="flex items-center gap-1 mb-1">
+                <p className="text-sm font-bold text-gray-800 truncate">
+                  {store.name}
+                </p>
+                {store.is_verified && (
+                  <span title="公式認証店舗" className="flex-shrink-0">
+                    <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 1L3 5v6c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l5.59-5.59L18 8l-7 7z"/>
+                    </svg>
+                  </span>
+                )}
+              </div>
 
               {/* 価格 */}
               <div className="flex items-baseline gap-1.5 mb-1">

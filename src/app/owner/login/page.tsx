@@ -2,11 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-// デモ用認証情報
-const DEMO_EMAIL = "owner@valuesip.jp";
-const DEMO_PASSWORD = "demo1234";
-const DEMO_STORE_NAME = "道玄坂ビアホール";
+import { supabase } from "@/lib/supabase";
 
 export default function OwnerLoginPage() {
   const router = useRouter();
@@ -20,22 +16,18 @@ export default function OwnerLoginPage() {
     setError("");
     setLoading(true);
 
-    await new Promise((r) => setTimeout(r, 600));
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
 
-    // デモ認証（本番ではSupabase Auth / API呼び出しに置き換え）
-    if (email === DEMO_EMAIL && password === DEMO_PASSWORD) {
-      localStorage.setItem("ownerToken", "demo-token-" + Date.now());
-      localStorage.setItem("ownerStoreName", DEMO_STORE_NAME);
-      router.push("/owner/dashboard");
-    } else {
-      setError(
-        "メールアドレスまたはパスワードが正しくありません。\nデモ: " +
-          DEMO_EMAIL +
-          " / " +
-          DEMO_PASSWORD
-      );
+    if (authError) {
+      setError("メールアドレスまたはパスワードが正しくありません。");
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    router.push("/owner/dashboard");
   };
 
   return (
@@ -61,7 +53,7 @@ export default function OwnerLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="owner@valuesip.jp"
+                placeholder="owner@example.com"
                 className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -81,7 +73,7 @@ export default function OwnerLoginPage() {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 whitespace-pre-line">
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">
                 {error}
               </div>
             )}
@@ -94,14 +86,6 @@ export default function OwnerLoginPage() {
               {loading ? "ログイン中…" : "ログイン"}
             </button>
           </form>
-
-          {/* デモ情報 */}
-          <div className="mt-5 pt-4 border-t border-gray-100">
-            <p className="text-xs text-gray-400 text-center">デモアカウント</p>
-            <p className="text-xs text-gray-500 text-center mt-1">
-              {DEMO_EMAIL} / {DEMO_PASSWORD}
-            </p>
-          </div>
         </div>
 
         <p className="text-xs text-gray-500 text-center mt-5">

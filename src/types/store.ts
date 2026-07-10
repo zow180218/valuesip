@@ -44,6 +44,8 @@ export interface Store {
   seats?: number;
   open_hours?: string;   // 例: "17:00〜24:00（L.O. 23:30）"
   closed_days?: string;  // 例: "月曜日" / "不定休" / "年中無休"
+  is_verified?: boolean; // ⑦ 公式認証バッジ
+  verified_at?: string;  // ISO 8601 date string
 }
 
 /** フィルター状態 */

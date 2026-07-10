@@ -46,9 +46,22 @@ export default function StoreDetailSheet({
         {/* ヘッダー */}
         <div className="flex items-start justify-between px-5 py-3 border-b border-gray-100">
           <div className="flex-1 min-w-0">
-            <h2 className="text-base font-bold text-gray-900 truncate">
-              {store.name}
-            </h2>
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-base font-bold text-gray-900 truncate">
+                {store.name}
+              </h2>
+              {store.is_verified && (
+                <span
+                  className="inline-flex items-center gap-0.5 bg-amber-50 text-amber-600 border border-amber-200 text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                  title="公式認証店舗"
+                >
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 1L3 5v6c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l5.59-5.59L18 8l-7 7z"/>
+                  </svg>
+                  公式
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {store.hh_available && store.hh_time && (
                 <span className="text-[11px] bg-gray-900 text-amber-400 font-semibold px-2 py-0.5 rounded-full">

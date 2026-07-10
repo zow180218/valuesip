@@ -121,6 +121,7 @@ export async function GET(request: NextRequest) {
     hh_time: row.hh_hours ?? undefined,   // DB: hh_hours → 型: hh_time
     data_updated_at: row.updated_at,
     phone: row.phone ?? undefined,
+    is_verified: row.verified,            // ⑦ 公式認証バッジ
     menus: menusByStore[row.store_id] ?? [],
   }));
 
