@@ -115,7 +115,7 @@ export async function PATCH(
 
   const { data, error } = await supabase
     .from("stores")
-    .update(updatePayload)
+    .update(updatePayload as any)
     .eq("store_id", storeId)
     .select("store_id, name, address, phone, seats, hh_hours, open_hours, closed_days, verified, verified_at, updated_at")
     .single();
