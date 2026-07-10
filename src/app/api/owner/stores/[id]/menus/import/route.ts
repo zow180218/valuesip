@@ -156,7 +156,7 @@ export async function POST(
 
   const { data: inserted, error: insertError } = await supabase
     .from("menus")
-    .insert(validated)
+    .insert(validated as any)
     .select("menu_id");
 
   if (insertError) {
