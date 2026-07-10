@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createServiceClient } from "@/lib/supabase";
 import type { Store, Menu, AreaId } from "@/types/store";
 import { SAMPLE_STORES } from "@/data/stores";
 
@@ -52,7 +52,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ stores: filtered });
   }
 
-  // 店舗取得
+  const supabase = createServiceClient();
+  
+    // 店舗取得
   const { data: rawStoreRows, error: storesError } = await supabase
     .from("stores")
     .select("*")
