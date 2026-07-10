@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import type { Database } from "@/types/database";
 
+export const dynamic = "force-dynamic";
+
 // ─────────────────────────────────────────────────────────────
 // PATCH /api/admin/reports/:reportId
 //

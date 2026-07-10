@@ -53,11 +53,13 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createServiceClient();
-  
-    // 店舗取得
+
+  // 店舗取得（verified を明示的に SELECT してスキーマキャッシュ問題を回避）
   const { data: rawStoreRows, error: storesError } = await supabase
     .from("stores")
-    .select("*")
+    .select(
+      "store_id, area_id, name, address, lat, lng, google_place_id, opening_hours, hh_hours, phone, website_url, is_active, verified, created_at, updated_at"
+    )
     .eq("area_id", areaId)
     .eq("is_active", true)
     .order("store_id");
