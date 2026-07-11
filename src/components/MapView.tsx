@@ -7,7 +7,7 @@ import {
   AdvancedMarker,
   useMap,
 } from "@vis.gl/react-google-maps";
-import type { StorePinData } from "@/types/store";
+import type { StorePinData, MapBounds } from "@/types/store";
 import PricePin from "./PricePin";
 
 interface MapViewProps {
@@ -15,6 +15,7 @@ interface MapViewProps {
   selectedStoreId: string | null;
   onStoreSelect: (storeId: string) => void;
   onMapMoved?: () => void;
+  onBoundsChange?: (bounds: MapBounds) => void;
   centerOn?: { lat: number; lng: number; key: string };
   userLocation?: { lat: number; lng: number } | null;
 }
@@ -22,6 +23,34 @@ interface MapViewProps {
 // 渋谷駅を初期中心に
 const SHIBUYA_CENTER = { lat: 35.6580, lng: 139.7016 };
 const DEFAULT_ZOOM = 15;
+
+/**
+ * マップが idle になるたびに現在の表示境界を親に通知するコンポーネント
+ * Map の子として useMap() を使用
+ */
+function BoundsTracker({ onBoundsChange }: { onBoundsChange?: (b: MapBounds) => void }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!map || !onBoundsChange) return;
+    const handleIdle = () => {
+      const b = map.getBounds();
+      if (!b) return;
+      onBoundsChange({
+        north: b.getNorthEast().lat(),
+        south: b.getSouthWest().lat(),
+        east:  b.getNorthEast().lng(),
+        west:  b.getSouthWest().lng(),
+      });
+    };
+    // google.maps.Map#addListener は MapsEventListener を返す
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const listener = (map as any).addListener("idle", handleIdle);
+    return () => listener?.remove?.();
+  // onBoundsChange は useCallback で安定させること
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map]);
+  return null;
+}
 
 // サジェスト選択時にマップをパンするコンポーネント（Map の子として useMap() を使用）
 function MapPanner({ centerOn }: { centerOn?: { lat: number; lng: number; key: string } }) {
@@ -42,6 +71,7 @@ export default function MapView({
   selectedStoreId,
   onStoreSelect,
   onMapMoved,
+  onBoundsChange,
   centerOn,
   userLocation,
 }: MapViewProps) {
@@ -88,6 +118,7 @@ export default function MapView({
         className="w-full h-full"
       >
         <MapPanner centerOn={centerOn} />
+        <BoundsTracker onBoundsChange={onBoundsChange} />
 
         {/* 現在地マーカー（青い●） */}
         {userLocation && (

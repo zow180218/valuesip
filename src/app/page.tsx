@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
-import type { FilterState, Store, AreaId } from "@/types/store";
+import type { FilterState, Store, AreaId, MapBounds } from "@/types/store";
 import { SAMPLE_STORES } from "@/data/stores";
 import { filterStores, DEFAULT_FILTER } from "@/lib/filters";
 import { getFavoriteIds, toggleFavoriteId } from "@/lib/favorites";
@@ -35,6 +35,23 @@ export default function Home() {
   const [favoriteStoreIds, setFavoriteStoreIds] = useState<Set<string>>(() =>
     getFavoriteIds()
   );
+
+  // ── 「このエリアを検索」ボタン ──
+  // currentBounds: MapView から idle ごとに更新される最新の表示範囲
+  // activeBounds:  ボタンを押した瞬間の範囲（この範囲でピンを絞り込む）
+  // showSearchBtn: マップをドラッグ後に true になる
+  const [currentBounds, setCurrentBounds] = useState<MapBounds | null>(null);
+  const [activeBounds, setActiveBounds]   = useState<MapBounds | null>(null);
+  const [showSearchBtn, setShowSearchBtn] = useState(false);
+
+  const handleBoundsChange = useCallback((bounds: MapBounds) => {
+    setCurrentBounds(bounds);
+  }, []);
+
+  const handleSearchThisArea = useCallback(() => {
+    setActiveBounds(currentBounds);
+    setShowSearchBtn(false);
+  }, [currentBounds]);
 
   // ── マップパン（サジェスト選択時 / 現在地再センタリング） ──
   const [mapCenter, setMapCenter] = useState<
@@ -126,10 +143,22 @@ export default function Home() {
   // ── 選択中の店舗 ──
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
 
+  // ── bounds フィルタリング済み店舗（「このエリアを検索」適用時） ──
+  const boundsFilteredStores = useMemo(() => {
+    if (!activeBounds) return stores;
+    return stores.filter(
+      (s) =>
+        s.lat >= activeBounds.south &&
+        s.lat <= activeBounds.north &&
+        s.lng >= activeBounds.west &&
+        s.lng <= activeBounds.east
+    );
+  }, [stores, activeBounds]);
+
   // ── フィルター適用済みピンデータ（メモ化） ──
   const pinDataList = useMemo(
-    () => filterStores(stores, filter, favoriteStoreIds),
-    [stores, filter, favoriteStoreIds]
+    () => filterStores(boundsFilteredStores, filter, favoriteStoreIds),
+    [boundsFilteredStores, filter, favoriteStoreIds]
   );
 
   // ── 選択中の店舗オブジェクト ──
@@ -181,6 +210,9 @@ export default function Home() {
     setSelectedStoreId(null);
     setIsFilterOpen(false);
     setMapCenter({ ...AREA_CENTERS[area], key: "area-change-" + Date.now() });
+    // エリアが変わったら bounds フィルタをリセット
+    setActiveBounds(null);
+    setShowSearchBtn(false);
     fetchStores(area);
   }, [selectedArea, fetchStores]);
 
@@ -199,7 +231,9 @@ export default function Home() {
           onStoreSelect={handleStoreSelect}
           onMapMoved={() => {
             if (selectedStoreId) setSelectedStoreId(null);
+            setShowSearchBtn(true); // ドラッグ後にボタンを表示
           }}
+          onBoundsChange={handleBoundsChange}
           centerOn={mapCenter}
           userLocation={userLocation}
         />
@@ -292,6 +326,22 @@ export default function Home() {
             <circle cx="12" cy="12" r="7" strokeWidth={1.5} strokeDasharray="2 2" />
           </svg>
         </button>
+      )}
+
+      {/* 「このエリアを検索」ボタン（マップドラッグ後・マップ表示時のみ） */}
+      {viewMode === "map" && showSearchBtn && !selectedStore && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 flex justify-center">
+          <button
+            onClick={handleSearchThisArea}
+            className="flex items-center gap-1.5 px-4 py-2 bg-white rounded-full shadow-float text-sm font-medium text-gray-700 hover:bg-gray-50 active:scale-95 transition-all border border-gray-100"
+          >
+            <svg className="w-3.5 h-3.5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5}
+                d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+            </svg>
+            このエリアを検索
+          </button>
+        </div>
       )}
 
       {/* ローディングインジケーター */}

@@ -6,6 +6,14 @@
 
 export type AreaId = "shibuya" | "shinjuku";
 
+/** マップの表示境界ボックス */
+export interface MapBounds {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
 export type MenuCategory =
   | "beer"        // ビール・生ビール
   | "highball"    // ハイボール
