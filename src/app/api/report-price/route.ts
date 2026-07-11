@@ -37,13 +37,15 @@ export async function POST(request: NextRequest) {
 
   const supabase = createServiceClient();
 
-  // price_reports テーブルの実スキーマに合わせてinsert
-  // (store_id カラムなし、created_at は DB デフォルト)
-  const { error } = await supabase.from("price_reports").insert({
+  // price_reports テーブルへinsert
+  // Supabase の generated types が strict なため as any でキャスト（既存パターンに合わせる）
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from("price_reports") as any).insert({
     menu_id,
     reported_price,
     note: note ?? null,
     status: "pending",          // 管理者承認待ち
+    user_fingerprint: "",       // 必須フィールド（匿名報告は空文字）
   });
 
   if (error) {
