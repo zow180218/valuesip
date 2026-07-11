@@ -3,6 +3,8 @@ import { createServiceClient } from "@/lib/supabase";
 import type { Store, Menu, AreaId } from "@/types/store";
 import { SAMPLE_STORES } from "@/data/stores";
 
+export const dynamic = "force-dynamic";
+
 // Supabase DB のカラム型（スキーマと一致させる）
 type StoreRow = {
   store_id: string;
@@ -129,5 +131,8 @@ export async function GET(request: NextRequest) {
     menus: menusByStore[row.store_id] ?? [],
   }));
 
-  return NextResponse.json({ stores });
+  return NextResponse.json({
+    stores,
+    _commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7),
+  });
 }
