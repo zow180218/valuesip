@@ -2,9 +2,10 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
-import type { FilterState, Store } from "@/types/store";
+import type { FilterState, Store, AreaId } from "@/types/store";
 import { SAMPLE_STORES } from "@/data/stores";
 import { filterStores, DEFAULT_FILTER } from "@/lib/filters";
+import { getFavoriteIds, toggleFavoriteId } from "@/lib/favorites";
 import TopSearchBar from "@/components/TopSearchBar";
 import FilterPanel from "@/components/FilterPanel";
 import BottomCardStrip from "@/components/BottomCardStrip";
@@ -14,10 +15,26 @@ import StoreListView from "@/components/StoreListView";
 // MapViewはSSRで動かないのでdynamic importでクライアント専用に
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
+// エリアのデフォルトマップ中心座標
+const AREA_CENTERS: Record<AreaId, { lat: number; lng: number }> = {
+  shibuya: { lat: 35.6580, lng: 139.7015 },
+  shinjuku: { lat: 35.6895, lng: 139.7006 },
+};
+
 export default function Home() {
   // ── 店舗データ（Supabase接続時はAPIから、未接続時はサンプルデータ） ──
-  const [stores, setStores] = useState<Store[]>(SAMPLE_STORES);
+  const [stores, setStores] = useState<Store[]>(
+    SAMPLE_STORES.filter((s) => s.area === "shibuya")
+  );
   const [isLoadingStores, setIsLoadingStores] = useState(false);
+
+  // ── エリア選択 ──
+  const [selectedArea, setSelectedArea] = useState<AreaId>("shibuya");
+
+  // ── お気に入り（localStorage から初期化） ──
+  const [favoriteStoreIds, setFavoriteStoreIds] = useState<Set<string>>(() =>
+    getFavoriteIds()
+  );
 
   // ── マップパン（サジェスト選択時 / 現在地再センタリング） ──
   const [mapCenter, setMapCenter] = useState<
@@ -33,13 +50,13 @@ export default function Home() {
     return new URLSearchParams(window.location.search).has("compare") ? "list" : "map";
   });
 
-  // ── ドリンク比較（URLから初期化 → useEffect競合を回避） ──
+  // ── ドリンク比較（URLから初期化） ──
   const [compareDrink, setCompareDrink] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return new URLSearchParams(window.location.search).get("compare") ?? null;
   });
 
-  // compareDrink変化時にURLを更新（URLSearchParams が自動エンコード）
+  // compareDrink変化時にURLを更新
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (compareDrink) {
@@ -65,7 +82,7 @@ export default function Home() {
         setMapCenter({ ...loc, key: "user-location-init" });
       },
       () => {
-        // 拒否・タイムアウト → 渋谷のまま
+        // 拒否・タイムアウト → エリアデフォルト座標のまま
       },
       { timeout: 8000, maximumAge: 60000 }
     );
@@ -78,16 +95,21 @@ export default function Home() {
   }, [userLocation]);
 
   // APIから最新データを取得（Supabase設定済みの場合のみ有効）
-  const fetchStores = useCallback(async (area = "shibuya") => {
+  const fetchStores = useCallback(async (area: AreaId = "shibuya") => {
     setIsLoadingStores(true);
     try {
       const res = await fetch(`/api/stores?area=${area}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: { stores: Store[] } = await res.json();
-      if (data.stores.length > 0) setStores(data.stores);
+      if (data.stores.length > 0) {
+        setStores(data.stores);
+      } else {
+        // Supabaseにデータがない場合はサンプルデータで補完
+        setStores(SAMPLE_STORES.filter((s) => s.area === area));
+      }
     } catch (err) {
-      // フォールバック：サンプルデータをそのまま使う
       console.warn("[page] API fetch failed, using sample data:", err);
+      setStores(SAMPLE_STORES.filter((s) => s.area === area));
     } finally {
       setIsLoadingStores(false);
     }
@@ -106,8 +128,8 @@ export default function Home() {
 
   // ── フィルター適用済みピンデータ（メモ化） ──
   const pinDataList = useMemo(
-    () => filterStores(stores, filter),
-    [stores, filter]
+    () => filterStores(stores, filter, favoriteStoreIds),
+    [stores, filter, favoriteStoreIds]
   );
 
   // ── 選択中の店舗オブジェクト ──
@@ -125,7 +147,6 @@ export default function Home() {
     setIsFilterOpen(false);
   };
 
-  // リスト表示から店舗選択 → マップに切り替えて詳細表示
   const handleListStoreSelect = (storeId: string) => {
     const store = stores.find((s) => s.store_id === storeId);
     setSelectedStoreId(storeId);
@@ -136,7 +157,6 @@ export default function Home() {
     }
   };
 
-  // サジェストから店舗を選択 → 選択 + マップパン
   const handleStoreSuggestSelect = (storeId: string) => {
     const store = stores.find((s) => s.store_id === storeId);
     setSelectedStoreId(storeId);
@@ -153,6 +173,21 @@ export default function Home() {
   ) => {
     setFilter((prev) => ({ ...prev, [key]: value }));
   };
+
+  // エリア切替
+  const handleAreaChange = useCallback((area: AreaId) => {
+    if (area === selectedArea) return;
+    setSelectedArea(area);
+    setSelectedStoreId(null);
+    setIsFilterOpen(false);
+    setMapCenter({ ...AREA_CENTERS[area], key: "area-change-" + Date.now() });
+    fetchStores(area);
+  }, [selectedArea, fetchStores]);
+
+  // お気に入りトグル
+  const handleToggleFavorite = useCallback((storeId: string) => {
+    setFavoriteStoreIds((prev) => toggleFavoriteId(prev, storeId));
+  }, []);
 
   return (
     <main className="relative w-full h-screen overflow-hidden">
@@ -189,9 +224,7 @@ export default function Home() {
         onSearchChange={(v) => handleFilterChange("searchText", v)}
         onStoreSuggestSelect={handleStoreSuggestSelect}
         hhEnabled={filter.hhEnabled}
-        onHhToggle={() =>
-          handleFilterChange("hhEnabled", !filter.hhEnabled)
-        }
+        onHhToggle={() => handleFilterChange("hhEnabled", !filter.hhEnabled)}
         isFilterOpen={isFilterOpen}
         onFilterToggle={() => {
           setIsFilterOpen((prev) => !prev);
@@ -203,6 +236,8 @@ export default function Home() {
           setSelectedStoreId(null);
           setIsFilterOpen(false);
         }}
+        selectedArea={selectedArea}
+        onAreaChange={handleAreaChange}
       />
 
       {/* ③ フィルターパネル（スライドダウン） */}
@@ -214,6 +249,9 @@ export default function Home() {
           maxBudget={filter.maxBudget}
           onMinBudgetChange={(v) => handleFilterChange("minBudget", v)}
           onMaxBudgetChange={(v) => handleFilterChange("maxBudget", v)}
+          favoritesOnly={filter.favoritesOnly}
+          onFavoritesOnlyChange={(v) => handleFilterChange("favoritesOnly", v)}
+          favoriteCount={favoriteStoreIds.size}
         />
       )}
 
@@ -224,6 +262,8 @@ export default function Home() {
           selectedStoreId={selectedStoreId}
           onStoreSelect={handleStoreSelect}
           hhEnabled={filter.hhEnabled}
+          favoriteStoreIds={favoriteStoreIds}
+          onToggleFavorite={handleToggleFavorite}
         />
       )}
 
@@ -233,6 +273,8 @@ export default function Home() {
           store={selectedStore}
           hhEnabled={filter.hhEnabled}
           onClose={() => setSelectedStoreId(null)}
+          isFavorite={favoriteStoreIds.has(selectedStore.store_id)}
+          onToggleFavorite={handleToggleFavorite}
         />
       )}
 
@@ -252,7 +294,7 @@ export default function Home() {
         </button>
       )}
 
-      {/* ローディングインジケーター（任意） */}
+      {/* ローディングインジケーター */}
       {isLoadingStores && (
         <div className="absolute top-24 left-1/2 -translate-x-1/2 bg-white/90 rounded-full px-4 py-1.5 text-xs text-gray-500 shadow-float pointer-events-none">
           データ更新中…

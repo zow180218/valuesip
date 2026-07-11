@@ -1,4 +1,5 @@
 import type { Store, Menu, FilterState, StorePinData } from "@/types/store";
+import { isHHActiveNow } from "./hhSchedule";
 
 // ──────────────────────────────────────────────
 // 価格計算ロジック
@@ -87,10 +88,16 @@ export function computeStorePinData(
   const isInBudget =
     effectivePrice >= minBudget && effectivePrice <= maxBudget;
 
+  // 現在時刻が HH 時間帯内かを判定
+  const isHHActive = store.hh_available
+    ? isHHActiveNow(store.hh_time)
+    : false;
+
   return {
     store,
     effectivePrice,
     isHH,
+    isHHActive,
     isInBudget,
     matchCount: matchedMenus.length,
   };
@@ -98,19 +105,27 @@ export function computeStorePinData(
 
 /**
  * 全店舗にフィルターを適用してStorePinDataのリストを返す
- * 検索外の店舗はnullで除外される
+ * - favoriteStoreIds が渡され favoritesOnly=true の場合はお気に入りのみ
+ * - 検索外の店舗はnullで除外される
  */
 export function filterStores(
   stores: Store[],
-  filter: FilterState
+  filter: FilterState,
+  favoriteStoreIds?: Set<string>
 ): StorePinData[] {
   return stores
+    .filter((s) => {
+      if (filter.favoritesOnly && favoriteStoreIds) {
+        return favoriteStoreIds.has(s.store_id);
+      }
+      return true;
+    })
     .map((s) => computeStorePinData(s, filter))
     .filter((d): d is StorePinData => d !== null);
 }
 
 /**
- * 予算デフォルト値
+ * フィルターデフォルト値
  */
 export const DEFAULT_FILTER: FilterState = {
   searchText: "",
@@ -118,4 +133,5 @@ export const DEFAULT_FILTER: FilterState = {
   minBudget: 0,
   maxBudget: 800,
   hhEnabled: true,
+  favoritesOnly: false,
 };
