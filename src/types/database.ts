@@ -75,7 +75,28 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_stores_by_area: {
+        Args: { p_area_id: string };
+        Returns: Array<{
+          store_id: string;
+          area_id: string;
+          name: string;
+          address: string | null;
+          lat: number;
+          lng: number;
+          google_place_id: string | null;
+          opening_hours: Record<string, string> | null;
+          hh_hours: string | null;
+          phone: string | null;
+          website_url: string | null;
+          is_active: boolean;
+          verified: boolean;
+          created_at: string;
+          updated_at: string;
+        }>;
+      };
+    };
     Enums: { menu_category: MenuCategory; };
   };
 }

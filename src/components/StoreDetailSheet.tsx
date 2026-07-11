@@ -1,20 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import type { Store } from "@/types/store";
+import type { Store, Menu } from "@/types/store";
 import { effectiveMenuPrice } from "@/lib/filters";
+import { isHHActiveNow } from "@/lib/hhSchedule";
 
 interface StoreDetailSheetProps {
   store: Store;
   hhEnabled: boolean;
   onClose: () => void;
+  isFavorite: boolean;
+  onToggleFavorite: (storeId: string) => void;
 }
 
 export default function StoreDetailSheet({
   store,
   hhEnabled,
   onClose,
+  isFavorite,
+  onToggleFavorite,
 }: StoreDetailSheetProps) {
+  // 価格報告モーダル
+  const [reportingMenu, setReportingMenu] = useState<Menu | null>(null);
+  const [reportPrice, setReportPrice] = useState("");
+  const [reportNote, setReportNote] = useState("");
+  const [reportStatus, setReportStatus] = useState<"idle" | "sending" | "done" | "error">("idle");
+
+  const hhActive = store.hh_available ? isHHActiveNow(store.hh_time) : false;
+
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     store.name + " " + store.address
   )}`;
@@ -33,6 +47,37 @@ export default function StoreDetailSheet({
     cocktail: "カクテル",
     soft: "ソフトドリンク",
     other: "その他",
+  };
+
+  // 価格報告送信
+  const handleReportSubmit = async () => {
+    if (!reportingMenu || !reportPrice) return;
+    const price = parseInt(reportPrice, 10);
+    if (isNaN(price) || price <= 0) return;
+
+    setReportStatus("sending");
+    try {
+      const res = await fetch("/api/report-price", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          store_id: store.store_id,
+          menu_id: reportingMenu.id,
+          reported_price: price,
+          note: reportNote || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      setReportStatus("done");
+      setTimeout(() => {
+        setReportingMenu(null);
+        setReportPrice("");
+        setReportNote("");
+        setReportStatus("idle");
+      }, 1800);
+    } catch {
+      setReportStatus("error");
+    }
   };
 
   return (
@@ -64,8 +109,17 @@ export default function StoreDetailSheet({
             </div>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {store.hh_available && store.hh_time && (
-                <span className="text-[11px] bg-gray-900 text-amber-400 font-semibold px-2 py-0.5 rounded-full">
-                  HH {store.hh_time}
+                <span
+                  className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                    hhActive
+                      ? "bg-amber-500 text-white"
+                      : "bg-gray-900 text-amber-400"
+                  }`}
+                >
+                  {hhActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-white inline-block animate-pulse" />
+                  )}
+                  {hhActive ? `HH中 〜${store.hh_time?.split("〜")[1] ?? ""}` : `HH ${store.hh_time}`}
                 </span>
               )}
               <span className="text-[11px] text-gray-400">
@@ -76,14 +130,36 @@ export default function StoreDetailSheet({
               )}
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="ml-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 flex-shrink-0"
-          >
-            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+
+          {/* ハートボタン + 閉じるボタン */}
+          <div className="ml-3 flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={() => onToggleFavorite(store.store_id)}
+              className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
+                isFavorite ? "bg-red-50 text-red-500" : "bg-gray-100 text-gray-400 hover:text-red-400"
+              }`}
+              title={isFavorite ? "お気に入り解除" : "お気に入りに追加"}
+            >
+              <svg
+                className="w-4 h-4"
+                viewBox="0 0 24 24"
+                fill={isFavorite ? "currentColor" : "none"}
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round"
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </button>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200"
+            >
+              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* メニューリスト */}
@@ -116,31 +192,49 @@ export default function StoreDetailSheet({
                   </div>
                 </div>
 
-                <div className="text-right flex-shrink-0">
-                  {isHHApplied ? (
-                    <div>
-                      <span className="text-base font-bold text-amber-500">
-                        ¥{currentPrice.toLocaleString()}
-                      </span>
-                      <span className="ml-1 text-[10px] font-bold bg-gray-900 text-amber-400 px-1.5 py-0.5 rounded-full">
-                        HH
-                      </span>
-                      <div className="text-[10px] text-gray-400 line-through">
-                        ¥{menu.price.toLocaleString()}
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <span className="text-base font-bold text-gray-800">
-                        ¥{currentPrice.toLocaleString()}
-                      </span>
-                      {menu.hh_price && !hhEnabled && (
-                        <div className="text-[10px] text-amber-500">
-                          HH ¥{menu.hh_price.toLocaleString()}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="text-right">
+                    {isHHApplied ? (
+                      <div>
+                        <span className="text-base font-bold text-amber-500">
+                          ¥{currentPrice.toLocaleString()}
+                        </span>
+                        <span className="ml-1 text-[10px] font-bold bg-gray-900 text-amber-400 px-1.5 py-0.5 rounded-full">
+                          HH
+                        </span>
+                        <div className="text-[10px] text-gray-400 line-through">
+                          ¥{menu.price.toLocaleString()}
                         </div>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="text-base font-bold text-gray-800">
+                          ¥{currentPrice.toLocaleString()}
+                        </span>
+                        {menu.hh_price && !hhEnabled && (
+                          <div className="text-[10px] text-amber-500">
+                            HH ¥{menu.hh_price.toLocaleString()}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {/* 価格を報告 */}
+                  <button
+                    onClick={() => {
+                      setReportingMenu(menu);
+                      setReportPrice(currentPrice.toString());
+                      setReportNote("");
+                      setReportStatus("idle");
+                    }}
+                    className="text-gray-300 hover:text-brand-400 transition-colors"
+                    title="価格を報告する"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
                 </div>
               </div>
             );
@@ -182,6 +276,83 @@ export default function StoreDetailSheet({
           </div>
         </div>
       </div>
+
+      {/* 価格報告モーダル */}
+      {reportingMenu && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setReportingMenu(null);
+              setReportStatus("idle");
+            }
+          }}
+        >
+          <div className="w-full max-w-lg bg-white rounded-t-3xl p-6 pb-8 shadow-2xl animate-slide-up">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-gray-900">価格を報告する</h3>
+              <button
+                onClick={() => { setReportingMenu(null); setReportStatus("idle"); }}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200"
+              >
+                <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-500 mb-1">メニュー</p>
+            <p className="text-sm font-semibold text-gray-800 mb-4">{reportingMenu.name}</p>
+
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+              実際の価格（税込）
+            </label>
+            <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 mb-3">
+              <span className="text-sm text-gray-400 mr-1">¥</span>
+              <input
+                type="number"
+                value={reportPrice}
+                onChange={(e) => setReportPrice(e.target.value)}
+                placeholder="例: 480"
+                min={1}
+                className="flex-1 text-sm text-gray-700 bg-transparent outline-none"
+              />
+            </div>
+
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+              メモ（任意）
+            </label>
+            <input
+              type="text"
+              value={reportNote}
+              onChange={(e) => setReportNote(e.target.value)}
+              placeholder="例: 税抜価格でした / ランチは異なります"
+              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-700 placeholder-gray-400 outline-none mb-4"
+            />
+
+            {reportStatus === "done" ? (
+              <div className="flex items-center justify-center gap-2 py-2 text-green-600 text-sm font-semibold">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                ご報告ありがとうございます！
+              </div>
+            ) : (
+              <button
+                onClick={handleReportSubmit}
+                disabled={!reportPrice || reportStatus === "sending"}
+                className="w-full py-2.5 bg-brand-500 text-white text-sm font-semibold rounded-full disabled:opacity-40 hover:bg-brand-600 transition-colors"
+              >
+                {reportStatus === "sending" ? "送信中…" : "報告する"}
+              </button>
+            )}
+
+            {reportStatus === "error" && (
+              <p className="text-center text-xs text-red-400 mt-2">送信に失敗しました。もう一度お試しください。</p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

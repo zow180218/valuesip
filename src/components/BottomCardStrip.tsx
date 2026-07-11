@@ -8,6 +8,8 @@ interface BottomCardStripProps {
   selectedStoreId: string | null;
   onStoreSelect: (storeId: string) => void;
   hhEnabled: boolean;
+  favoriteStoreIds: Set<string>;
+  onToggleFavorite: (storeId: string) => void;
 }
 
 export default function BottomCardStrip({
@@ -15,6 +17,8 @@ export default function BottomCardStrip({
   selectedStoreId,
   onStoreSelect,
   hhEnabled,
+  favoriteStoreIds,
+  onToggleFavorite,
 }: BottomCardStripProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inBudget = pinDataList.filter((d) => d.isInBudget);
@@ -66,8 +70,11 @@ export default function BottomCardStrip({
         style={{ scrollbarWidth: "none" }}
       >
         {[...inBudget, ...outOfBudget].map((pinData) => {
-          const { store, effectivePrice, isHH, isInBudget } = pinData;
+          const { store, effectivePrice, isHH, isHHActive, isInBudget } = pinData;
           const isSelected = store.store_id === selectedStoreId;
+          const isFavorite = favoriteStoreIds.has(store.store_id);
+          // 区名まで含む部分（東京都〇〇区）を除去して番地だけ表示
+          const shortAddress = store.address.replace(/東京都.+?区/, "");
 
           return (
             <button
@@ -80,18 +87,40 @@ export default function BottomCardStrip({
                   : "hover:shadow-lg"
               } ${!isInBudget ? "opacity-50" : ""}`}
             >
-              {/* 店名 + 公式認証バッジ */}
-              <div className="flex items-center gap-1 mb-1">
-                <p className="text-sm font-bold text-gray-800 truncate">
-                  {store.name}
-                </p>
-                {store.is_verified && (
-                  <span title="公式認証店舗" className="flex-shrink-0">
-                    <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 1L3 5v6c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l5.59-5.59L18 8l-7 7z"/>
-                    </svg>
-                  </span>
-                )}
+              {/* 店名 + 公式認証 + お気に入りハート */}
+              <div className="flex items-start gap-1 mb-1">
+                <div className="flex-1 flex items-center gap-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-800 truncate">
+                    {store.name}
+                  </p>
+                  {store.is_verified && (
+                    <span title="公式認証店舗" className="flex-shrink-0">
+                      <svg className="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 1L3 5v6c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l5.59-5.59L18 8l-7 7z"/>
+                      </svg>
+                    </span>
+                  )}
+                </div>
+                {/* ハートボタン — stopPropagation でカード選択と分離 */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleFavorite(store.store_id);
+                  }}
+                  className="flex-shrink-0 -mt-0.5 -mr-0.5 p-0.5 rounded-full hover:bg-gray-100 transition-colors"
+                  title={isFavorite ? "お気に入り解除" : "お気に入りに追加"}
+                >
+                  <svg
+                    className={`w-4 h-4 transition-colors ${isFavorite ? "text-red-500" : "text-gray-300"}`}
+                    viewBox="0 0 24 24"
+                    fill={isFavorite ? "currentColor" : "none"}
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round"
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                </button>
               </div>
 
               {/* 価格 */}
@@ -116,12 +145,22 @@ export default function BottomCardStrip({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                     d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 </svg>
-                <span className="truncate">{store.address.replace("東京都渋谷区", "")}</span>
+                <span className="truncate">{shortAddress}</span>
               </div>
 
+              {/* HH情報 — HH中かどうかでバッジ色を変える */}
               {store.hh_available && store.hh_time && (
-                <div className="mt-1.5 text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full inline-block">
-                  HH {store.hh_time}
+                <div
+                  className={`mt-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
+                    isHHActive
+                      ? "bg-amber-500 text-white"
+                      : "bg-amber-50 text-amber-600"
+                  }`}
+                >
+                  {isHHActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-white inline-block animate-pulse" />
+                  )}
+                  {isHHActive ? "HH中" : `HH ${store.hh_time}`}
                 </div>
               )}
             </button>

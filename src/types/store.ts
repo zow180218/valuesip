@@ -55,6 +55,7 @@ export interface FilterState {
   minBudget: number;      // 予算下限（円）
   maxBudget: number;      // 予算上限（円）
   hhEnabled: boolean;     // HH価格を使用するか（true = HH価格優先）
+  favoritesOnly: boolean; // お気に入り店舗のみ表示
 }
 
 /** ピン表示用の計算済みデータ */
@@ -62,6 +63,7 @@ export interface StorePinData {
   store: Store;
   effectivePrice: number;   // 表示する価格（HHトグル状態に応じた最安値）
   isHH: boolean;            // HH価格が適用されているか
+  isHHActive: boolean;      // 現在時刻がHH時間帯内か
   isInBudget: boolean;      // 予算内か
   matchCount: number;       // 検索ワードに一致するメニュー数
 }
