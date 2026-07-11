@@ -93,7 +93,7 @@ export default function DrinkSearchBar({
   return (
     <div className="relative">
       <div className="flex items-center bg-white rounded-full shadow-float px-4 py-2.5 gap-2">
-        {/* グラスアイコン */}
+        {/* タグアイコン（メニュー全般） */}
         <svg
           className="w-4 h-4 text-gray-400 flex-shrink-0"
           fill="none"
@@ -104,7 +104,7 @@ export default function DrinkSearchBar({
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M5 3h14l-2 14H7L5 3zM8 17v4m8-4v4M6 21h12"
+            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
           />
         </svg>
         <input
@@ -177,7 +177,7 @@ export default function DrinkSearchBar({
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={1.5}
-                      d="M5 3h14l-2 14H7L5 3zM8 17v4m8-4v4M6 21h12"
+                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
                     />
                   </svg>
                 </div>

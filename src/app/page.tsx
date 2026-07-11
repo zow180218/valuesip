@@ -54,16 +54,16 @@ export default function Home() {
   });
 
   // ── ドリンク比較（URLから初期化） ──
-  const [compareDrink, setCompareDrink] = useState<string | null>(() => {
+  const [compareItem, setCompareDrink] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return new URLSearchParams(window.location.search).get("compare") ?? null;
   });
 
-  // compareDrink変化時にURLを更新
+  // compareItem変化時にURLを更新
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (compareDrink) {
-      params.set("compare", compareDrink);
+    if (compareItem) {
+      params.set("compare", compareItem);
     } else {
       params.delete("compare");
     }
@@ -73,7 +73,7 @@ export default function Home() {
       "",
       newSearch ? `${window.location.pathname}?${newSearch}` : window.location.pathname
     );
-  }, [compareDrink]);
+  }, [compareItem]);
 
   // 起動時にGPS取得
   useEffect(() => {
@@ -96,13 +96,17 @@ export default function Home() {
   }, [userLocation]);
 
   // APIから全店舗データを取得
+  // Supabase未登録の店舗はSAMPLE_STORESで補完する
   const fetchStores = useCallback(async () => {
     setIsLoadingStores(true);
     try {
       const res = await fetch("/api/stores");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: { stores: Store[] } = await res.json();
-      setStores(data.stores.length > 0 ? data.stores : SAMPLE_STORES);
+      // APIが返したstore_idのセットを作成し、未収録のサンプルを補完
+      const apiIds = new Set(data.stores.map((s) => s.store_id));
+      const supplemental = SAMPLE_STORES.filter((s) => !apiIds.has(s.store_id));
+      setStores([...data.stores, ...supplemental]);
     } catch (err) {
       console.warn("[page] API fetch failed, using sample data:", err);
       setStores(SAMPLE_STORES);
@@ -209,8 +213,8 @@ export default function Home() {
           selectedStoreId={selectedStoreId}
           onStoreSelect={handleListStoreSelect}
           hhEnabled={filter.hhEnabled}
-          compareDrink={compareDrink}
-          onCompareDrinkChange={setCompareDrink}
+          compareItem={compareItem}
+          onCompareItemChange={setCompareDrink}
         />
       )}
 

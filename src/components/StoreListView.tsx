@@ -8,8 +8,8 @@ interface StoreListViewProps {
   selectedStoreId: string | null;
   onStoreSelect: (storeId: string) => void;
   hhEnabled: boolean;
-  compareDrink: string | null;
-  onCompareDrinkChange: (name: string | null) => void;
+  compareItem: string | null;
+  onCompareItemChange: (name: string | null) => void;
 }
 
 const areaLabel: Record<string, string> = {
@@ -20,25 +20,25 @@ const areaLabel: Record<string, string> = {
   daikanyama: "代官山",
 };
 
-/** 選択ドリンクの価格を取得（HHトグル考慮）。取扱なしは null */
-function getDrinkPrice(
+/** 選択メニューの価格を取得（HHトグル考慮）。取扱なしは null */
+function getItemPrice(
   store: StorePinData["store"],
-  drinkName: string,
+  itemName: string,
   hhEnabled: boolean
 ): number | null {
-  const item = store.menus.find((m) => m.name === drinkName);
+  const item = store.menus.find((m) => m.name === itemName);
   if (!item) return null;
   return hhEnabled && item.hh_price != null ? item.hh_price : item.price;
 }
 
-/** 選択ドリンクがHH価格かどうか */
-function isDrinkHH(
+/** 選択メニューがHH価格かどうか */
+function isItemHH(
   store: StorePinData["store"],
-  drinkName: string,
+  itemName: string,
   hhEnabled: boolean
 ): boolean {
   if (!hhEnabled) return false;
-  const item = store.menus.find((m) => m.name === drinkName);
+  const item = store.menus.find((m) => m.name === itemName);
   return item?.hh_price != null;
 }
 
@@ -47,17 +47,17 @@ export default function StoreListView({
   selectedStoreId,
   onStoreSelect,
   hhEnabled,
-  compareDrink,
-  onCompareDrinkChange,
+  compareItem,
+  onCompareItemChange,
 }: StoreListViewProps) {
   // DrinkSearchBar用に全店舗のStoreを渡す
   const allStores = pinDataList.map((d) => d.store);
 
   // ── ソート ──
   const sorted = [...pinDataList].sort((a, b) => {
-    if (compareDrink) {
-      const ap = getDrinkPrice(a.store, compareDrink, hhEnabled);
-      const bp = getDrinkPrice(b.store, compareDrink, hhEnabled);
+    if (compareItem) {
+      const ap = getItemPrice(a.store, compareItem, hhEnabled);
+      const bp = getItemPrice(b.store, compareItem, hhEnabled);
       // 取扱なし → 最後尾
       if (ap === null && bp === null) return 0;
       if (ap === null) return 1;
@@ -73,10 +73,10 @@ export default function StoreListView({
   // ── 件数集計 ──
   const inBudgetCount = pinDataList.filter((d) => d.isInBudget).length;
   const outCount = pinDataList.length - inBudgetCount;
-  const withDrinkCount = compareDrink
-    ? pinDataList.filter((d) => getDrinkPrice(d.store, compareDrink, hhEnabled) !== null).length
+  const withItemCount = compareItem
+    ? pinDataList.filter((d) => getItemPrice(d.store, compareItem, hhEnabled) !== null).length
     : null;
-  const withoutDrinkCount = compareDrink ? pinDataList.length - (withDrinkCount ?? 0) : null;
+  const withoutItemCount = compareItem ? pinDataList.length - (withItemCount ?? 0) : null;
 
   // ── シェア ──
   const handleShare = () => {
@@ -108,22 +108,22 @@ export default function StoreListView({
 
       {/* スティッキーエリア */}
       <div className="sticky top-0 bg-gray-50/95 backdrop-blur-sm px-4 pt-2 pb-2 z-10 space-y-2">
-        {/* ドリンク比較検索バー */}
+        {/* メニュー横断比較バー */}
         <DrinkSearchBar
           stores={allStores}
-          selectedDrink={compareDrink}
-          onDrinkSelect={onCompareDrinkChange}
+          selectedDrink={compareItem}
+          onDrinkSelect={onCompareItemChange}
         />
 
         {/* サマリーバー */}
         <div className="flex items-center gap-2">
-          {compareDrink ? (
+          {compareItem ? (
             <>
               <span className="text-xs font-semibold text-brand-600 bg-white rounded-full px-3 py-1 shadow-float">
-                {withDrinkCount}店舗で取扱
-                {withoutDrinkCount != null && withoutDrinkCount > 0 && (
+                {withItemCount}店舗で取扱
+                {withoutItemCount != null && withoutItemCount > 0 && (
                   <span className="text-gray-400 font-normal ml-1">
-                    （{withoutDrinkCount}店舗は取扱なし）
+                    （{withoutItemCount}店舗は取扱なし）
                   </span>
                 )}
               </span>
@@ -172,16 +172,16 @@ export default function StoreListView({
           const isSelected = store.store_id === selectedStoreId;
 
           // 比較モード時の価格・HH状態
-          const drinkPrice = compareDrink
-            ? getDrinkPrice(store, compareDrink, hhEnabled)
+          const drinkPrice = compareItem
+            ? getDrinkPrice(store, compareItem, hhEnabled)
             : null;
-          const drinkIsHH = compareDrink
-            ? isDrinkHH(store, compareDrink, hhEnabled)
+          const drinkIsHH = compareItem
+            ? isDrinkHH(store, compareItem, hhEnabled)
             : pinData.isHH;
-          const hasItem = compareDrink ? drinkPrice !== null : true;
+          const hasItem = compareItem ? drinkPrice !== null : true;
 
           // 表示価格
-          const displayPrice = compareDrink
+          const displayPrice = compareItem
             ? drinkPrice
             : effectivePrice;
 
@@ -203,7 +203,7 @@ export default function StoreListView({
               onClick={() => onStoreSelect(store.store_id)}
               className={`w-full text-left bg-white rounded-2xl px-4 py-3.5 shadow-float flex items-center gap-3 transition-all active:scale-[0.99] ${
                 isSelected ? "ring-2 ring-brand-500" : "hover:shadow-lg"
-              } ${(!isInBudget && !compareDrink) || !hasItem ? "opacity-50" : ""}`}
+              } ${(!isInBudget && !compareItem) || !hasItem ? "opacity-50" : ""}`}
             >
               {/* 順位バッジ */}
               <div
@@ -261,7 +261,7 @@ export default function StoreListView({
                       )}
                     </div>
                     <p className="text-[10px] text-gray-400">
-                      {compareDrink ? "この価格" : "最安〜"}
+                      {compareItem ? "この価格" : "最安〜"}
                     </p>
                   </>
                 )}
