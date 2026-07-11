@@ -131,8 +131,5 @@ export async function GET(request: NextRequest) {
     menus: menusByStore[row.store_id] ?? [],
   }));
 
-  return NextResponse.json({
-    stores,
-    _commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7),
-  });
+  return NextResponse.json({ stores });
 }
