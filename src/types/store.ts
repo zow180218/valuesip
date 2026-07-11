@@ -66,6 +66,35 @@ export interface FilterState {
   favoritesOnly: boolean; // お気に入り店舗のみ表示
 }
 
+/** 店舗写真 */
+export interface StoreImage {
+  id: string;
+  image_url: string;
+  uploaded_by: "owner" | "user";
+  created_at: string;
+}
+
+/** クーポン */
+export interface StoreCoupon {
+  id: string;
+  store_id: string;
+  title: string;
+  description?: string;
+  discount_text: string;
+  valid_from: string;
+  valid_until?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+/** メニューごとの価格報告集計 */
+export interface MenuReportStats {
+  menu_id: string;
+  report_count: number;
+  last_reported_at: string | null;
+  median_price: number | null;
+}
+
 /** ピン表示用の計算済みデータ */
 export interface StorePinData {
   store: Store;

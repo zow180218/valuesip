@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { SAMPLE_STORES } from "@/data/stores";
 import { effectiveMenuPrice } from "@/lib/filters";
+import type { Menu } from "@/types/store";
 
 const DEMO_STORE_ID = "shib-001";
 
@@ -28,6 +29,13 @@ export default function OwnerDashboardPage() {
   const [synced, setSynced] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
+  // ⑩ クイック価格更新
+  const [quickEditId, setQuickEditId] = useState<string | null>(null);
+  const [quickPrice, setQuickPrice] = useState("");
+  const [quickHHPrice, setQuickHHPrice] = useState("");
+  const [quickSaving, setQuickSaving] = useState(false);
+  const [quickSaved, setQuickSaved] = useState(false);
+
   const store = SAMPLE_STORES.find((s) => s.store_id === DEMO_STORE_ID);
 
   const handleSync = async () => {
@@ -35,6 +43,36 @@ export default function OwnerDashboardPage() {
     await new Promise((r) => setTimeout(r, 1500));
     setSyncing(false);
     setSynced(true);
+  };
+
+  const startQuickEdit = (menu: Menu) => {
+    setQuickEditId(menu.id);
+    setQuickPrice(String(menu.price));
+    setQuickHHPrice(menu.hh_price ? String(menu.hh_price) : "");
+    setQuickSaved(false);
+  };
+
+  const saveQuickEdit = async () => {
+    if (!quickEditId || !quickPrice) return;
+    setQuickSaving(true);
+    try {
+      if (/^[0-9a-f-]{36}$/.test(quickEditId)) {
+        await fetch(`/api/owner/menus/${quickEditId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            price: Number(quickPrice),
+            hh_price: quickHHPrice ? Number(quickHHPrice) : null,
+          }),
+        });
+      }
+      setQuickSaved(true);
+      setQuickEditId(null);
+      setTimeout(() => setQuickSaved(false), 2000);
+    } catch {
+    } finally {
+      setQuickSaving(false);
+    }
   };
 
   return (
@@ -123,6 +161,102 @@ export default function OwnerDashboardPage() {
             <span className="text-xs font-semibold text-gray-700 text-center">{action.label}</span>
           </Link>
         ))}
+      </div>
+
+      {/* ⑩ クイック価格更新 */}
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-gray-900">クイック価格更新</h2>
+            <p className="text-xs text-gray-400 mt-0.5">メニューを選んで価格を即時変更</p>
+          </div>
+          {quickSaved && (
+            <span className="text-xs text-green-600 font-semibold flex items-center gap-1">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              保存しました
+            </span>
+          )}
+        </div>
+        <div className="divide-y divide-gray-50">
+          {(store?.menus ?? []).slice(0, 6).map((menu) => (
+            <div key={menu.id}>
+              {quickEditId === menu.id ? (
+                <div className="px-5 py-3 bg-blue-50 border-l-2 border-blue-400 flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-gray-700 mb-1.5">{menu.name}</p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-gray-400">通常</span>
+                        <div className="flex items-center border border-gray-200 rounded-lg bg-white px-2 py-1">
+                          <span className="text-xs text-gray-400 mr-0.5">¥</span>
+                          <input
+                            type="number"
+                            value={quickPrice}
+                            onChange={(e) => setQuickPrice(e.target.value)}
+                            className="w-16 text-xs text-gray-700 outline-none bg-transparent"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-amber-500">HH</span>
+                        <div className="flex items-center border border-gray-200 rounded-lg bg-white px-2 py-1">
+                          <span className="text-xs text-gray-400 mr-0.5">¥</span>
+                          <input
+                            type="number"
+                            value={quickHHPrice}
+                            onChange={(e) => setQuickHHPrice(e.target.value)}
+                            placeholder="なし"
+                            className="w-16 text-xs text-gray-700 outline-none bg-transparent placeholder-gray-300"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5 flex-shrink-0">
+                    <button
+                      onClick={saveQuickEdit}
+                      disabled={quickSaving}
+                      className="bg-blue-600 text-white text-[11px] font-bold px-3 py-1.5 rounded-lg disabled:opacity-60"
+                    >
+                      {quickSaving ? "…" : "保存"}
+                    </button>
+                    <button
+                      onClick={() => setQuickEditId(null)}
+                      className="bg-gray-100 text-gray-500 text-[11px] font-semibold px-2 py-1.5 rounded-lg"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center px-5 py-3 gap-3 hover:bg-gray-50 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-800 truncate">{menu.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-xs font-bold text-gray-800">¥{menu.price.toLocaleString()}</span>
+                      {menu.hh_price && (
+                        <span className="text-xs font-semibold text-amber-500">HH ¥{menu.hh_price.toLocaleString()}</span>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => startQuickEdit(menu)}
+                    className="text-xs text-blue-600 font-semibold hover:underline flex-shrink-0"
+                  >
+                    価格変更
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="px-5 py-3 border-t border-gray-50">
+          <Link href={`/owner/stores/${DEMO_STORE_ID}/menu`} className="text-xs text-blue-600 hover:underline">
+            すべてのメニューを管理 →
+          </Link>
+        </div>
       </div>
 
       {/* 最近の変更 */}
