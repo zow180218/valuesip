@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import type { Store, AreaId } from "@/types/store";
+import type { Store } from "@/types/store";
 
 interface TopSearchBarProps {
   stores: Store[];
@@ -14,8 +14,6 @@ interface TopSearchBarProps {
   onFilterToggle: () => void;
   viewMode: "map" | "list";
   onViewModeToggle: () => void;
-  selectedArea: AreaId;
-  onAreaChange: (area: AreaId) => void;
 }
 
 export default function TopSearchBar({
@@ -29,8 +27,6 @@ export default function TopSearchBar({
   onFilterToggle,
   viewMode,
   onViewModeToggle,
-  selectedArea,
-  onAreaChange,
 }: TopSearchBarProps) {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -59,28 +55,7 @@ export default function TopSearchBar({
     <div className="absolute top-4 left-4 right-4 z-20 flex items-center gap-2">
       {/* 検索インプット */}
       <div className="flex-1 relative">
-        <div className="flex items-center bg-white rounded-full shadow-float px-2 py-1.5 gap-2">
-          {/* エリアタブ（渋谷/新宿） */}
-          <div className="flex bg-gray-100 rounded-full p-0.5 flex-shrink-0">
-            {(["shibuya", "shinjuku"] as AreaId[]).map((area) => (
-              <button
-                key={area}
-                onMouseDown={(e) => {
-                  e.preventDefault(); // blur を防ぐ
-                  onAreaChange(area);
-                }}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors ${
-                  selectedArea === area
-                    ? "bg-white text-brand-600 shadow-sm"
-                    : "text-gray-400 hover:text-gray-600"
-                }`}
-              >
-                {area === "shibuya" ? "渋谷" : "新宿"}
-              </button>
-            ))}
-          </div>
-          {/* 区切り */}
-          <div className="w-px h-4 bg-gray-200 flex-shrink-0" />
+        <div className="flex items-center bg-white rounded-full shadow-float px-3 py-1.5 gap-2">
           <svg
             className="w-4 h-4 text-gray-400 flex-shrink-0"
             fill="none"
@@ -139,7 +114,6 @@ export default function TopSearchBar({
                   idx < storeSuggestions.length - 1 ? "border-b border-gray-100" : ""
                 }`}
               >
-                {/* 店舗アイコン */}
                 <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
                   <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -151,7 +125,7 @@ export default function TopSearchBar({
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">{store.name}</p>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {store.area === "shibuya" ? "渋谷" : "新宿"}
+                    {store.address}
                     {store.hh_available && store.hh_time && (
                       <span className="ml-2 text-amber-600 font-medium">
                         HH {store.hh_time}
@@ -179,13 +153,11 @@ export default function TopSearchBar({
         title={viewMode === "map" ? "リスト表示" : "マップ表示"}
       >
         {viewMode === "map" ? (
-          /* リストアイコン */
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M4 6h16M4 10h16M4 14h16M4 18h16" />
           </svg>
         ) : (
-          /* マップアイコン */
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />

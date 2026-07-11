@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase";
 import type { Store, Menu, AreaId } from "@/types/store";
+// AreaId は area フィールドのキャストにのみ使用
 import { SAMPLE_STORES } from "@/data/stores";
 
 export const dynamic = "force-dynamic";
@@ -39,30 +40,25 @@ type MenuRow = {
 };
 
 /**
- * GET /api/stores?area=shibuya
+ * GET /api/stores
  *
- * 指定エリアの店舗一覧（メニュー込み）を返す。
+ * 全店舗一覧（メニュー込み）を返す。全国対応。
  * Supabase未設定時はフォールバックとしてローカルサンプルデータを返す。
  */
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const areaId = searchParams.get("area") ?? "shibuya";
-
-  // Supabase 環境変数が未設定の場合はサンプルデータを返す
+export async function GET(_request: NextRequest) {
+  // Supabase 環境変数が未設定の場合はサンプルデータを返す（全件）
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    const filtered = SAMPLE_STORES.filter((s) => s.area === areaId);
-    return NextResponse.json({ stores: filtered });
+    return NextResponse.json({ stores: SAMPLE_STORES });
   }
 
   const supabase = createServiceClient();
 
-  // 店舗取得（verified を明示的に SELECT してスキーマキャッシュ問題を回避）
+  // 全店舗取得（エリア絞り込みなし）
   const { data: rawStoreRows, error: storesError } = await supabase
     .from("stores")
     .select(
       "store_id, area_id, name, address, lat, lng, google_place_id, opening_hours, hh_hours, phone, website_url, is_active, verified, created_at, updated_at"
     )
-    .eq("area_id", areaId)
     .eq("is_active", true)
     .order("store_id");
 

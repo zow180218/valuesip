@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
-import type { FilterState, Store, AreaId, MapBounds } from "@/types/store";
+import type { FilterState, Store, MapBounds } from "@/types/store";
 import { SAMPLE_STORES } from "@/data/stores";
 import { filterStores, DEFAULT_FILTER } from "@/lib/filters";
 import { getFavoriteIds, toggleFavoriteId } from "@/lib/favorites";
@@ -15,21 +15,10 @@ import StoreListView from "@/components/StoreListView";
 // MapViewはSSRで動かないのでdynamic importでクライアント専用に
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
-// エリアのデフォルトマップ中心座標
-const AREA_CENTERS: Record<AreaId, { lat: number; lng: number }> = {
-  shibuya: { lat: 35.6580, lng: 139.7015 },
-  shinjuku: { lat: 35.6895, lng: 139.7006 },
-};
-
 export default function Home() {
-  // ── 店舗データ（Supabase接続時はAPIから、未接続時はサンプルデータ） ──
-  const [stores, setStores] = useState<Store[]>(
-    SAMPLE_STORES.filter((s) => s.area === "shibuya")
-  );
+  // ── 店舗データ（Supabase接続時はAPIから、未接続時はサンプルデータ全件） ──
+  const [stores, setStores] = useState<Store[]>(SAMPLE_STORES);
   const [isLoadingStores, setIsLoadingStores] = useState(false);
-
-  // ── エリア選択 ──
-  const [selectedArea, setSelectedArea] = useState<AreaId>("shibuya");
 
   // ── お気に入り（localStorage から初期化） ──
   const [favoriteStoreIds, setFavoriteStoreIds] = useState<Set<string>>(() =>
@@ -37,9 +26,6 @@ export default function Home() {
   );
 
   // ── 「このエリアを検索」ボタン ──
-  // currentBounds: MapView から idle ごとに更新される最新の表示範囲
-  // activeBounds:  ボタンを押した瞬間の範囲（この範囲でピンを絞り込む）
-  // showSearchBtn: マップをドラッグ後に true になる
   const [currentBounds, setCurrentBounds] = useState<MapBounds | null>(null);
   const [activeBounds, setActiveBounds]   = useState<MapBounds | null>(null);
   const [showSearchBtn, setShowSearchBtn] = useState(false);
@@ -98,9 +84,7 @@ export default function Home() {
         setUserLocation(loc);
         setMapCenter({ ...loc, key: "user-location-init" });
       },
-      () => {
-        // 拒否・タイムアウト → エリアデフォルト座標のまま
-      },
+      () => { /* 拒否・タイムアウト → デフォルト座標のまま */ },
       { timeout: 8000, maximumAge: 60000 }
     );
   }, []);
@@ -111,29 +95,24 @@ export default function Home() {
     setMapCenter({ ...userLocation, key: "user-location-" + Date.now() });
   }, [userLocation]);
 
-  // APIから最新データを取得（Supabase設定済みの場合のみ有効）
-  const fetchStores = useCallback(async (area: AreaId = "shibuya") => {
+  // APIから全店舗データを取得
+  const fetchStores = useCallback(async () => {
     setIsLoadingStores(true);
     try {
-      const res = await fetch(`/api/stores?area=${area}`);
+      const res = await fetch("/api/stores");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: { stores: Store[] } = await res.json();
-      if (data.stores.length > 0) {
-        setStores(data.stores);
-      } else {
-        // Supabaseにデータがない場合はサンプルデータで補完
-        setStores(SAMPLE_STORES.filter((s) => s.area === area));
-      }
+      setStores(data.stores.length > 0 ? data.stores : SAMPLE_STORES);
     } catch (err) {
       console.warn("[page] API fetch failed, using sample data:", err);
-      setStores(SAMPLE_STORES.filter((s) => s.area === area));
+      setStores(SAMPLE_STORES);
     } finally {
       setIsLoadingStores(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchStores("shibuya");
+    fetchStores();
   }, [fetchStores]);
 
   // ── フィルター状態 ──
@@ -163,10 +142,7 @@ export default function Home() {
 
   // ── 選択中の店舗オブジェクト ──
   const selectedStore = useMemo(
-    () =>
-      selectedStoreId
-        ? stores.find((s) => s.store_id === selectedStoreId) ?? null
-        : null,
+    () => selectedStoreId ? stores.find((s) => s.store_id === selectedStoreId) ?? null : null,
     [stores, selectedStoreId]
   );
 
@@ -203,19 +179,6 @@ export default function Home() {
     setFilter((prev) => ({ ...prev, [key]: value }));
   };
 
-  // エリア切替
-  const handleAreaChange = useCallback((area: AreaId) => {
-    if (area === selectedArea) return;
-    setSelectedArea(area);
-    setSelectedStoreId(null);
-    setIsFilterOpen(false);
-    setMapCenter({ ...AREA_CENTERS[area], key: "area-change-" + Date.now() });
-    // エリアが変わったら bounds フィルタをリセット
-    setActiveBounds(null);
-    setShowSearchBtn(false);
-    fetchStores(area);
-  }, [selectedArea, fetchStores]);
-
   // お気に入りトグル
   const handleToggleFavorite = useCallback((storeId: string) => {
     setFavoriteStoreIds((prev) => toggleFavoriteId(prev, storeId));
@@ -231,7 +194,7 @@ export default function Home() {
           onStoreSelect={handleStoreSelect}
           onMapMoved={() => {
             if (selectedStoreId) setSelectedStoreId(null);
-            setShowSearchBtn(true); // ドラッグ後にボタンを表示
+            setShowSearchBtn(true);
           }}
           onBoundsChange={handleBoundsChange}
           centerOn={mapCenter}
@@ -270,8 +233,6 @@ export default function Home() {
           setSelectedStoreId(null);
           setIsFilterOpen(false);
         }}
-        selectedArea={selectedArea}
-        onAreaChange={handleAreaChange}
       />
 
       {/* ③ フィルターパネル（スライドダウン） */}
