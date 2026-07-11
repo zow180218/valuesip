@@ -173,10 +173,10 @@ export default function StoreListView({
 
           // 比較モード時の価格・HH状態
           const drinkPrice = compareItem
-            ? getDrinkPrice(store, compareItem, hhEnabled)
+            ? getItemPrice(store, compareItem, hhEnabled)
             : null;
           const drinkIsHH = compareItem
-            ? isDrinkHH(store, compareItem, hhEnabled)
+            ? isItemHH(store, compareItem, hhEnabled)
             : pinData.isHH;
           const hasItem = compareItem ? drinkPrice !== null : true;
 

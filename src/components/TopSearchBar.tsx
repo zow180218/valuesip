@@ -85,7 +85,7 @@ export default function TopSearchBar({
                 inputRef.current?.blur();
               }
             }}
-            placeholder="店舗名・ドリンクで検索…"
+            placeholder="店舗名・メニューで検索…"
             className="flex-1 text-sm text-gray-800 placeholder-gray-400 outline-none bg-transparent"
           />
           {searchText && (
