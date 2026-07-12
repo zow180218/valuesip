@@ -11,8 +11,9 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // ログインページはチェック不要
-    if (pathname === "/owner/login") {
+    // 認証不要ページはチェックスキップ
+    const publicPaths = ["/owner/login", "/owner/signup", "/owner/reset-password"];
+    if (publicPaths.includes(pathname)) {
       setReady(true);
       return;
     }
@@ -37,8 +38,9 @@ export default function OwnerLayout({ children }: { children: React.ReactNode })
     return () => subscription.unsubscribe();
   }, [pathname, router]);
 
-  // ログインページはナビなし
-  if (pathname === "/owner/login") {
+  // 認証不要ページはナビなし
+  const publicPaths = ["/owner/login", "/owner/signup", "/owner/reset-password"];
+  if (publicPaths.includes(pathname)) {
     return <>{children}</>;
   }
 
