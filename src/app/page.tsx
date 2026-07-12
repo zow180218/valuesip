@@ -15,6 +15,23 @@ import StoreListView from "@/components/StoreListView";
 // MapViewはSSRで動かないのでdynamic importでクライアント専用に
 const MapView = dynamic(() => import("@/components/MapView"), { ssr: false });
 
+// ── サービスエリア判定 ──
+// 渋谷・新宿の中間点を中心とし、エリア外のユーザーには地図を追従させない
+const SERVICE_CENTER = { lat: 35.6816, lng: 139.7010 }; // 渋谷〜新宿中間
+const SERVICE_RADIUS_KM = 5;
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export default function Home() {
   // ── 店舗データ（Supabase接続時はAPIから、未接続時はサンプルデータ全件） ──
   const [stores, setStores] = useState<Store[]>(SAMPLE_STORES);
@@ -47,17 +64,24 @@ export default function Home() {
   // ── 現在地 ──
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  // ── 表示モード（URLの ?compare= を初回レンダーで読んで初期化） ──
-  const [viewMode, setViewMode] = useState<"map" | "list">(() => {
-    if (typeof window === "undefined") return "map";
-    return new URLSearchParams(window.location.search).has("compare") ? "list" : "map";
-  });
+  // ── 表示モード ──
+  // SSR/CSR ハイドレーション不一致を防ぐため、初期値はサーバーと同じ "map" に固定し
+  // クライアント mount 後に URL パラメータを読んで更新する
+  const [viewMode, setViewMode] = useState<"map" | "list">("map");
 
-  // ── ドリンク比較（URLから初期化） ──
-  const [compareItem, setCompareDrink] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    return new URLSearchParams(window.location.search).get("compare") ?? null;
-  });
+  // ── ドリンク比較 ──
+  const [compareItem, setCompareDrink] = useState<string | null>(null);
+
+  // mount 後に URL から compare パラメータを読み込む（ハイドレーション後に実行）
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const compare = params.get("compare");
+    if (compare) {
+      setCompareDrink(compare);
+      setViewMode("list");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // compareItem変化時にURLを更新
   useEffect(() => {
@@ -82,7 +106,12 @@ export default function Home() {
       (pos) => {
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setUserLocation(loc);
-        setMapCenter({ ...loc, key: "user-location-init" });
+        // サービスエリア（渋谷・新宿近郊 5km 以内）のときだけ地図を現在地に追従
+        // エリア外のユーザーには SHIBUYA_CENTER のデフォルト表示を維持する
+        const distKm = haversineKm(loc.lat, loc.lng, SERVICE_CENTER.lat, SERVICE_CENTER.lng);
+        if (distKm <= SERVICE_RADIUS_KM) {
+          setMapCenter({ ...loc, key: "user-location-init" });
+        }
       },
       () => { /* 拒否・タイムアウト → デフォルト座標のまま */ },
       { timeout: 8000, maximumAge: 60000 }

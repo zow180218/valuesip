@@ -88,9 +88,23 @@ export default function OwnerLoginPage() {
           </form>
         </div>
 
-        <p className="text-xs text-gray-500 text-center mt-5">
-          ValueSip — 飲食コスパマップ オーナー管理画面
-        </p>
+        <div className="text-center mt-5 space-y-1.5">
+          <p className="text-xs text-gray-500">
+            ValueSip — 飲食コスパマップ オーナー管理画面
+          </p>
+          <p className="text-xs text-gray-400">
+            招待メールを受け取った方は{" "}
+            <a href="/owner/signup" className="text-blue-400 hover:text-blue-300 underline">
+              新規登録
+            </a>
+          </p>
+          <p className="text-xs text-gray-400">
+            パスワードをお忘れの方は{" "}
+            <a href="/owner/reset-password" className="text-blue-400 hover:text-blue-300 underline">
+              パスワードリセット
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );

@@ -37,3 +37,10 @@ next-env.d.ts
 
 # Supabase
 .supabase/
+
+# Local utility scripts (may contain credentials or local paths)
+# node_modules/.bin/*.ps1 は /node_modules で除外済み
+*.ps1
+run_migration.js
+run_migration.bat
+*.bat
