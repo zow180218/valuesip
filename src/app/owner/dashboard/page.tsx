@@ -1,22 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { SAMPLE_STORES } from "@/data/stores";
-import { effectiveMenuPrice } from "@/lib/filters";
+
 import type { Menu } from "@/types/store";
 import { useOwnerStoreId } from "@/hooks/useOwnerStoreId";
-
-const WEEKLY_STATS = {
-  pageViews: 312,
-  pageViewsDelta: 18,
-  mapClicks: 87,
-  mapClicksDelta: 5,
-  hhAccess: 194,
-  hhAccessPct: 62,
-  menuCount: 9,
-  lastUpdated: "今日",
-};
+import type { StoreAnalytics } from "@/app/api/analytics/store/[storeId]/route";
 
 const RECENT_SYNCS = [
   { name: "生ビール（中）", oldPrice: 600, newPrice: 620, hhPrice: 480, source: "POS同期", time: "2時間前" },
@@ -25,9 +15,28 @@ const RECENT_SYNCS = [
 ];
 
 export default function OwnerDashboardPage() {
-  const { storeId } = useOwnerStoreId();
+  const { storeId, loading: storeLoading } = useOwnerStoreId();
   const [synced, setSynced] = useState(false);
   const [syncing, setSyncing] = useState(false);
+
+  // 実アナリティクスデータ
+  const [analytics, setAnalytics] = useState<StoreAnalytics | null>(null);
+
+  const fetchAnalytics = useCallback(async (sid: string) => {
+    try {
+      const res = await fetch(`/api/analytics/store/${sid}?period=7d`);
+      if (res.ok) {
+        const data: StoreAnalytics = await res.json();
+        setAnalytics(data);
+      }
+    } catch {
+      // フェッチ失敗時はデータなしのまま（UIが "--" 表示）
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!storeLoading && storeId) fetchAnalytics(storeId);
+  }, [storeId, storeLoading, fetchAnalytics]);
 
   // ⑩ クイック価格更新
   const [quickEditId, setQuickEditId] = useState<string | null>(null);
@@ -108,41 +117,59 @@ export default function OwnerDashboardPage() {
         </div>
       )}
 
-      {/* 統計カード */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
+      {/* 統計カード（実データ） */}
+      {(() => {
+        const pv = analytics?.total_views ?? null;
+        const prevPv = analytics?.prev_total_views ?? null;
+        const pvDelta = pv !== null && prevPv !== null && prevPv > 0
+          ? Math.round(((pv - prevPv) / prevPv) * 100)
+          : null;
+        const mapClicks = analytics?.map_clicks ?? null;
+        const hhRate = analytics?.hh_hour_rate ?? null;
+        const hhAccess = pv !== null && hhRate !== null
+          ? Math.round(pv * hhRate / 100)
+          : null;
+        const menuCount = store?.menus?.length ?? null;
+        const stats = [
           {
             label: "週間ページ表示",
-            value: WEEKLY_STATS.pageViews,
-            sub: `↑ ${WEEKLY_STATS.pageViewsDelta}% 先週比`,
-            color: "text-green-600",
+            value: pv !== null ? pv.toLocaleString() : "—",
+            sub: pvDelta !== null
+              ? `${pvDelta >= 0 ? "↑" : "↓"} ${Math.abs(pvDelta)}% 先週比`
+              : analytics ? "前週データなし" : "集計中…",
+            color: pvDelta !== null && pvDelta >= 0 ? "text-green-600" : "text-red-500",
           },
           {
             label: "地図クリック数",
-            value: WEEKLY_STATS.mapClicks,
-            sub: `↑ ${WEEKLY_STATS.mapClicksDelta}% 先週比`,
+            value: mapClicks !== null ? mapClicks.toLocaleString() : "—",
+            sub: analytics ? "7日間合計" : "集計中…",
             color: "text-green-600",
           },
           {
             label: "HH時間帯アクセス",
-            value: WEEKLY_STATS.hhAccess,
-            sub: `全体の ${WEEKLY_STATS.hhAccessPct}%`,
+            value: hhAccess !== null ? hhAccess.toLocaleString() : "—",
+            sub: hhRate !== null ? `全体の ${hhRate}%` : "集計中…",
             color: "text-amber-600",
           },
           {
             label: "メニュー掲載数",
-            value: WEEKLY_STATS.menuCount,
-            sub: `最終更新: ${WEEKLY_STATS.lastUpdated}`,
+            value: menuCount !== null ? menuCount : "—",
+            sub: "現在の登録数",
             color: "text-gray-400",
           },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-white rounded-2xl p-4 border border-gray-100">
-            <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
-            <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
-            <p className={`text-xs mt-1 font-medium ${stat.color}`}>{stat.sub}</p>
+        ];
+        return (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {stats.map((stat) => (
+              <div key={stat.label} className="bg-white rounded-2xl p-4 border border-gray-100">
+                <p className="text-xs text-gray-500 font-medium">{stat.label}</p>
+                <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                <p className={`text-xs mt-1 font-medium ${stat.color}`}>{stat.sub}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {/* クイックアクション */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

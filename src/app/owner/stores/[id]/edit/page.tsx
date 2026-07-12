@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { SAMPLE_STORES } from "@/data/stores";
 import type { Store } from "@/types/store";
-import { getAuthHeaders } from "@/lib/auth";
 
 // ──────────────────────────────────────────
 // CSV ヘルパー
@@ -122,6 +121,7 @@ export default function StoreEditPage() {
     setSaveError(null);
 
     try {
+      const { getAuthHeaders } = await import("@/lib/auth");
       const authHeaders = await getAuthHeaders();
       const res = await fetch(`/api/owner/stores/${storeId}`, {
         method: "PATCH",
@@ -167,6 +167,7 @@ export default function StoreEditPage() {
     setImportError(null);
 
     try {
+      const { getAuthHeaders } = await import("@/lib/auth");
       const authHeaders = await getAuthHeaders();
       const res = await fetch(`/api/owner/stores/${storeId}/menus/import`, {
         method: "POST",
