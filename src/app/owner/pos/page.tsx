@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useOwnerStoreId } from "@/hooks/useOwnerStoreId";
 
 type Provider = "square" | "smaregi" | "airRegi" | "stores" | "csv" | "manual";
 
@@ -36,6 +37,7 @@ const SYNC_LOGS = [
 ];
 
 export default function PosPage() {
+  const { storeId } = useOwnerStoreId();
   const [selected, setSelected] = useState<Provider>("square");
   const [csvDrag, setCsvDrag] = useState(false);
   const [webhookModal, setWebhookModal] = useState(false);
@@ -192,7 +194,7 @@ export default function PosPage() {
           <p className="text-sm font-semibold text-gray-800">手動でメニューを管理する</p>
           <p className="text-xs text-gray-500">POS連携なしで、メニュー管理画面から直接価格を入力・更新できます。</p>
           <a
-            href="/owner/stores/shib-001/menu"
+            href={storeId ? `/owner/stores/${storeId}/menu` : "#"}
             className="inline-block bg-gray-900 text-white text-sm font-bold px-5 py-2.5 rounded-xl"
           >
             メニュー管理へ →

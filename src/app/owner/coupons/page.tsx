@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import type { StoreCoupon } from "@/types/store";
-
-const DEMO_STORE_ID = "shib-001";
+import { useOwnerStoreId } from "@/hooks/useOwnerStoreId";
 
 export default function OwnerCouponsPage() {
+  const { storeId, loading: storeLoading } = useOwnerStoreId();
   const [coupons, setCoupons] = useState<StoreCoupon[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,9 +22,10 @@ export default function OwnerCouponsPage() {
 
   // クーポン一覧取得
   const fetchCoupons = async () => {
+    if (!storeId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/owner/coupons?store_id=${DEMO_STORE_ID}`);
+      const res = await fetch(`/api/owner/coupons?store_id=${storeId}`);
       const data = await res.json();
       setCoupons(data.coupons ?? []);
     } catch {
@@ -34,7 +35,10 @@ export default function OwnerCouponsPage() {
     }
   };
 
-  useEffect(() => { fetchCoupons(); }, []);
+  useEffect(() => {
+    if (!storeLoading) fetchCoupons();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storeId, storeLoading]);
 
   // 作成
   const handleCreate = async (e: React.FormEvent) => {
@@ -47,7 +51,7 @@ export default function OwnerCouponsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          store_id: DEMO_STORE_ID,
+          store_id: storeId,
           title: form.title,
           discount_text: form.discount_text,
           description: form.description || undefined,

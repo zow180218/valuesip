@@ -5,8 +5,7 @@ import Link from "next/link";
 import { SAMPLE_STORES } from "@/data/stores";
 import { effectiveMenuPrice } from "@/lib/filters";
 import type { Menu } from "@/types/store";
-
-const DEMO_STORE_ID = "shib-001";
+import { useOwnerStoreId } from "@/hooks/useOwnerStoreId";
 
 const WEEKLY_STATS = {
   pageViews: 312,
@@ -26,6 +25,7 @@ const RECENT_SYNCS = [
 ];
 
 export default function OwnerDashboardPage() {
+  const { storeId } = useOwnerStoreId();
   const [synced, setSynced] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
@@ -36,7 +36,7 @@ export default function OwnerDashboardPage() {
   const [quickSaving, setQuickSaving] = useState(false);
   const [quickSaved, setQuickSaved] = useState(false);
 
-  const store = SAMPLE_STORES.find((s) => s.store_id === DEMO_STORE_ID);
+  const store = SAMPLE_STORES.find((s) => s.store_id === storeId);
 
   const handleSync = async () => {
     setSyncing(true);
@@ -147,8 +147,8 @@ export default function OwnerDashboardPage() {
       {/* クイックアクション */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "店舗情報を編集", href: `/owner/stores/${DEMO_STORE_ID}/edit`, icon: "🏪" },
-          { label: "メニューを管理", href: `/owner/stores/${DEMO_STORE_ID}/menu`, icon: "📋" },
+          { label: "店舗情報を編集", href: `/owner/stores/${storeId}/edit`, icon: "🏪" },
+          { label: "メニューを管理", href: `/owner/stores/${storeId}/menu`, icon: "📋" },
           { label: "POS 連携設定", href: "/owner/pos", icon: "💳" },
           { label: "分析を見る", href: "/owner/analytics", icon: "📊" },
         ].map((action) => (
@@ -253,7 +253,7 @@ export default function OwnerDashboardPage() {
           ))}
         </div>
         <div className="px-5 py-3 border-t border-gray-50">
-          <Link href={`/owner/stores/${DEMO_STORE_ID}/menu`} className="text-xs text-blue-600 hover:underline">
+          <Link href={`/owner/stores/${storeId}/menu`} className="text-xs text-blue-600 hover:underline">
             すべてのメニューを管理 →
           </Link>
         </div>
@@ -263,7 +263,7 @@ export default function OwnerDashboardPage() {
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
           <h2 className="text-sm font-bold text-gray-900">最近のメニュー変更</h2>
-          <Link href={`/owner/stores/${DEMO_STORE_ID}/menu`} className="text-xs text-blue-600 hover:underline">
+          <Link href={`/owner/stores/${storeId}/menu`} className="text-xs text-blue-600 hover:underline">
             すべて見る →
           </Link>
         </div>
@@ -313,7 +313,7 @@ export default function OwnerDashboardPage() {
               </div>
             </div>
             <Link
-              href={`/owner/stores/${DEMO_STORE_ID}/edit`}
+              href={`/owner/stores/${storeId}/edit`}
               className="text-xs text-blue-600 hover:underline"
             >
               時間を変更 →

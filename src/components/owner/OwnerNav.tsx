@@ -4,30 +4,29 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-
-// デモ用固定店舗ID（本番では owner_store_map から取得）
-const DEMO_STORE_ID = "shib-001";
-
-const navItems = [
-  { label: "ダッシュボード", href: "/owner/dashboard" },
-  { label: "店舗情報", href: `/owner/stores/${DEMO_STORE_ID}/edit` },
-  { label: "メニュー管理", href: `/owner/stores/${DEMO_STORE_ID}/menu` },
-  { label: "クーポン", href: "/owner/coupons" },
-  { label: "POS連携", href: "/owner/pos" },
-  { label: "分析", href: "/owner/analytics" },
-  { label: "価格報告", href: "/owner/admin/reports" },
-];
+import { useOwnerStoreId } from "@/hooks/useOwnerStoreId";
 
 export default function OwnerNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string>("");
+  const { storeId } = useOwnerStoreId();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUserEmail(session?.user?.email ?? "");
     });
   }, []);
+
+  const navItems = [
+    { label: "ダッシュボード", href: "/owner/dashboard" },
+    { label: "店舗情報", href: storeId ? `/owner/stores/${storeId}/edit` : "#" },
+    { label: "メニュー管理", href: storeId ? `/owner/stores/${storeId}/menu` : "#" },
+    { label: "クーポン", href: "/owner/coupons" },
+    { label: "POS連携", href: "/owner/pos" },
+    { label: "分析", href: "/owner/analytics" },
+    { label: "価格報告", href: "/owner/admin/reports" },
+  ];
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -60,14 +59,16 @@ export default function OwnerNav() {
         {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
-            (item.href !== "/owner/dashboard" && pathname.startsWith(item.href));
+            (item.href !== "/owner/dashboard" && item.href !== "#" && pathname.startsWith(item.href));
           return (
             <Link
-              key={item.href}
+              key={item.label}
               href={item.href}
               className={`flex-shrink-0 px-4 py-3 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
                 isActive
                   ? "text-white border-blue-400"
+                  : item.href === "#"
+                  ? "text-gray-600 border-transparent cursor-not-allowed pointer-events-none"
                   : "text-gray-400 border-transparent hover:text-gray-200"
               }`}
             >

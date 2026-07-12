@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { StoreAnalytics } from "@/app/api/analytics/store/[storeId]/route";
-
-// デモ用固定店舗ID（本番では認証ユーザーの store_id を使用）
-const DEMO_STORE_ID = "shib-001";
+import { useOwnerStoreId } from "@/hooks/useOwnerStoreId";
 
 type Period = "7d" | "30d";
 
@@ -25,20 +23,18 @@ function deltaStr(curr: number, prev: number): { text: string; up: boolean } {
 }
 
 export default function AnalyticsPage() {
+  const { storeId, loading: storeLoading } = useOwnerStoreId();
   const [period, setPeriod] = useState<Period>("7d");
   const [data, setData] = useState<StoreAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async (p: Period) => {
+  const fetchData = useCallback(async (p: Period, sid: string) => {
+    if (!sid) return;
     setLoading(true);
     setError(null);
     try {
-      const storeId =
-        (typeof window !== "undefined"
-          ? localStorage.getItem("ownerStoreId")
-          : null) ?? DEMO_STORE_ID;
-      const res = await fetch(`/api/analytics/store/${storeId}?period=${p}`);
+      const res = await fetch(`/api/analytics/store/${sid}?period=${p}`);
       if (!res.ok) throw new Error("取得失敗");
       const json: StoreAnalytics = await res.json();
       setData(json);
@@ -50,8 +46,8 @@ export default function AnalyticsPage() {
   }, []);
 
   useEffect(() => {
-    fetchData(period);
-  }, [period, fetchData]);
+    if (!storeLoading && storeId) fetchData(period, storeId);
+  }, [period, storeId, storeLoading, fetchData]);
 
   // バーチャート用最大値
   const maxDaily  = data ? Math.max(...data.daily.map((d) => d.count), 1) : 1;
