@@ -77,11 +77,21 @@ export default function BottomCardStrip({
           const shortAddress = store.address.replace(/東京都.+?区/, "");
 
           return (
-            <button
+            // div[role=button] を使用：<button> 内に <button>（ハート）をネストすると
+            // HTML仕様違反となりブラウザがDOMを修正→Reactのハイドレーションエラー (#418)
+            <div
               key={store.store_id}
               data-store-id={store.store_id}
+              role="button"
+              tabIndex={0}
               onClick={() => onStoreSelect(store.store_id)}
-              className={`flex-shrink-0 snap-start w-48 text-left bg-white rounded-2xl shadow-float p-3 transition-all ${
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onStoreSelect(store.store_id);
+                }
+              }}
+              className={`flex-shrink-0 snap-start w-48 text-left bg-white rounded-2xl shadow-float p-3 transition-all cursor-pointer ${
                 isSelected
                   ? "ring-2 ring-brand-500"
                   : "hover:shadow-lg"
@@ -163,7 +173,7 @@ export default function BottomCardStrip({
                   {isHHActive ? "HH中" : `HH ${store.hh_time}`}
                 </div>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
