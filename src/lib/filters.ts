@@ -1,5 +1,5 @@
 import type { Store, Menu, FilterState, StorePinData } from "@/types/store";
-import { isHHActiveNow } from "./hhSchedule";
+import { parseHHTime } from "./hhSchedule";
 
 // ──────────────────────────────────────────────
 // 価格計算ロジック
@@ -48,10 +48,13 @@ export function menuMatchesExclude(menu: Menu, excludeText: string): boolean {
  *
  * 3a: 検索条件に合うメニューの最安値をピン表示
  * 2a: 全メニュー対象（検索ワードで絞る）
+ *
+ * @param nowMins - 現在時刻（分）。-1 の場合は isHHActive を常に false にする（SSR安全）
  */
 export function computeStorePinData(
   store: Store,
-  filter: FilterState
+  filter: FilterState,
+  nowMins: number = -1,
 ): StorePinData | null {
   const { searchText, excludeText, minBudget, maxBudget, hhEnabled } = filter;
 
@@ -88,9 +91,12 @@ export function computeStorePinData(
   const isInBudget =
     effectivePrice >= minBudget && effectivePrice <= maxBudget;
 
-  // 現在時刻が HH 時間帯内かを判定
-  const isHHActive = store.hh_available
-    ? isHHActiveNow(store.hh_time)
+  // 現在時刻が HH 時間帯内かを判定（SSR安全: nowMins が -1 のときは常に false）
+  const isHHActive = nowMins >= 0 && store.hh_available
+    ? (() => {
+        const range = parseHHTime(store.hh_time ?? "");
+        return range ? nowMins >= range.startMins && nowMins < range.endMins : false;
+      })()
     : false;
 
   return {
@@ -107,11 +113,13 @@ export function computeStorePinData(
  * 全店舗にフィルターを適用してStorePinDataのリストを返す
  * - favoriteStoreIds が渡され favoritesOnly=true の場合はお気に入りのみ
  * - 検索外の店舗はnullで除外される
+ * - nowMins: 現在時刻（分）。-1 のときは isHHActive を常に false にする（SSR安全）
  */
 export function filterStores(
   stores: Store[],
   filter: FilterState,
-  favoriteStoreIds?: Set<string>
+  favoriteStoreIds?: Set<string>,
+  nowMins: number = -1,
 ): StorePinData[] {
   return stores
     .filter((s) => {
@@ -120,7 +128,7 @@ export function filterStores(
       }
       return true;
     })
-    .map((s) => computeStorePinData(s, filter))
+    .map((s) => computeStorePinData(s, filter, nowMins))
     .filter((d): d is StorePinData => d !== null);
 }
 

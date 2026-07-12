@@ -38,9 +38,9 @@ export default function Home() {
   const [isLoadingStores, setIsLoadingStores] = useState(false);
 
   // ── お気に入り（localStorage から初期化） ──
-  const [favoriteStoreIds, setFavoriteStoreIds] = useState<Set<string>>(() =>
-    getFavoriteIds()
-  );
+  // SSR/CSR ハイドレーション不一致を防ぐため、初期値は空Set に固定し
+  // クライアント mount 後に localStorage から読み込む
+  const [favoriteStoreIds, setFavoriteStoreIds] = useState<Set<string>>(new Set());
 
   // ── 「このエリアを検索」ボタン ──
   const [currentBounds, setCurrentBounds] = useState<MapBounds | null>(null);
@@ -64,6 +64,10 @@ export default function Home() {
   // ── 現在地 ──
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
+  // ── マウント済みフラグ（SSR/CSR ハイドレーション分岐制御） ──
+  // mounted = true になるまでは時刻依存・localStorage依存の値を使わない
+  const [mounted, setMounted] = useState(false);
+
   // ── 表示モード ──
   // SSR/CSR ハイドレーション不一致を防ぐため、初期値はサーバーと同じ "map" に固定し
   // クライアント mount 後に URL パラメータを読んで更新する
@@ -72,8 +76,11 @@ export default function Home() {
   // ── ドリンク比較 ──
   const [compareItem, setCompareDrink] = useState<string | null>(null);
 
-  // mount 後に URL から compare パラメータを読み込む（ハイドレーション後に実行）
+  // mount 後に: ① フラグ立て ② localStorage からお気に入りを読む ③ URL から compare パラメータを読む
   useEffect(() => {
+    setMounted(true);
+    setFavoriteStoreIds(getFavoriteIds());
+
     const params = new URLSearchParams(window.location.search);
     const compare = params.get("compare");
     if (compare) {
@@ -167,10 +174,17 @@ export default function Home() {
     );
   }, [stores, activeBounds]);
 
+  // ── 現在時刻（分）— mount 前は -1 にして SSR と同じ値にする ──
+  // mounted が true になった瞬間の時刻を使用（HH判定用）
+  const nowMins = mounted
+    ? new Date().getHours() * 60 + new Date().getMinutes()
+    : -1;
+
   // ── フィルター適用済みピンデータ（メモ化） ──
   const pinDataList = useMemo(
-    () => filterStores(boundsFilteredStores, filter, favoriteStoreIds),
-    [boundsFilteredStores, filter, favoriteStoreIds]
+    () => filterStores(boundsFilteredStores, filter, favoriteStoreIds, nowMins),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [boundsFilteredStores, filter, favoriteStoreIds, mounted]
   );
 
   // ── 選択中の店舗オブジェクト ──
