@@ -82,3 +82,13 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* iOS Safari のフォーカス時自動ズーム防止
+   font-size が 16px 未満のとき iOS は画面を拡大してしまう。
+   max(16px, 1em) で最低 16px を保証しつつ、ユーザーが
+   ブラウザのテキストサイズを大きくしている場合は 1em を優先する。 */
+input,
+select,
+textarea {
+  font-size: max(16px, 1em);
+}

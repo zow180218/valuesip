@@ -31,12 +31,14 @@ export default function TopSearchBar({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 店舗名サジェスト（最大5件）
+  // 店舗名サジェスト（最大5件・複数語句AND検索）
   const storeSuggestions = searchText.trim()
     ? stores
-        .filter((s) =>
-          s.name.toLowerCase().includes(searchText.toLowerCase().trim())
-        )
+        .filter((s) => {
+          const tokens = searchText.trim().replace(/　/g, " ").toLowerCase().split(/\s+/).filter(Boolean);
+          const name = s.name.toLowerCase();
+          return tokens.every((t) => name.includes(t));
+        })
         .slice(0, 5)
     : [];
 
@@ -145,7 +147,7 @@ export default function TopSearchBar({
       {/* マップ/リスト切替ボタン */}
       <button
         onClick={onViewModeToggle}
-        className={`flex items-center gap-1.5 px-3 py-2.5 rounded-full shadow-float text-sm font-medium transition-colors ${
+        className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-full shadow-float text-sm font-medium transition-colors ${
           viewMode === "list"
             ? "bg-brand-500 text-white"
             : "bg-white text-gray-600 hover:bg-gray-50"
@@ -168,7 +170,7 @@ export default function TopSearchBar({
       {/* フィルターボタン */}
       <button
         onClick={onFilterToggle}
-        className={`flex items-center gap-1.5 px-3 py-2.5 rounded-full shadow-float text-sm font-medium transition-colors ${
+        className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-full shadow-float text-sm font-medium transition-colors ${
           isFilterOpen
             ? "bg-brand-500 text-white"
             : "bg-white text-gray-600 hover:bg-gray-50"
@@ -192,14 +194,14 @@ export default function TopSearchBar({
       {/* HHトグル */}
       <button
         onClick={onHhToggle}
-        className={`flex items-center gap-1.5 px-3 py-2.5 rounded-full shadow-float text-sm font-semibold transition-colors ${
+        className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-full shadow-float text-sm font-semibold transition-colors ${
           hhEnabled
             ? "bg-gray-900 text-amber-400"
             : "bg-white text-gray-500"
         }`}
         title={hhEnabled ? "HH価格表示中" : "通常価格表示中"}
       >
-        <span className="text-[11px]">HH</span>
+        <span className="text-[11px] hidden sm:inline">HH</span>
         <div
           className={`w-8 h-4 rounded-full transition-colors relative ${
             hhEnabled ? "bg-amber-500" : "bg-gray-300"
