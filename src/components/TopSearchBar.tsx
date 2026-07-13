@@ -54,7 +54,7 @@ export default function TopSearchBar({
   };
 
   return (
-    <div className="absolute top-4 left-4 right-4 z-20 flex items-center gap-2">
+    <div className="absolute top-4 left-4 right-4 z-20 flex items-center gap-1.5 sm:gap-2">
       {/* 検索インプット */}
       <div className="flex-1 relative">
         <div className="flex items-center bg-white rounded-full shadow-float px-3 py-1.5 gap-2">
@@ -147,7 +147,7 @@ export default function TopSearchBar({
       {/* マップ/リスト切替ボタン */}
       <button
         onClick={onViewModeToggle}
-        className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-full shadow-float text-sm font-medium transition-colors ${
+        className={`flex-shrink-0 flex items-center gap-1.5 px-2 py-2 sm:px-3 sm:py-2.5 rounded-full shadow-float text-sm font-medium transition-colors ${
           viewMode === "list"
             ? "bg-brand-500 text-white"
             : "bg-white text-gray-600 hover:bg-gray-50"
@@ -170,7 +170,7 @@ export default function TopSearchBar({
       {/* フィルターボタン */}
       <button
         onClick={onFilterToggle}
-        className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-full shadow-float text-sm font-medium transition-colors ${
+        className={`flex-shrink-0 flex items-center gap-1.5 px-2 py-2 sm:px-3 sm:py-2.5 rounded-full shadow-float text-sm font-medium transition-colors ${
           isFilterOpen
             ? "bg-brand-500 text-white"
             : "bg-white text-gray-600 hover:bg-gray-50"
@@ -194,7 +194,7 @@ export default function TopSearchBar({
       {/* HHトグル */}
       <button
         onClick={onHhToggle}
-        className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-full shadow-float text-sm font-semibold transition-colors ${
+        className={`flex-shrink-0 flex items-center gap-1.5 px-2 py-2 sm:px-3 sm:py-2.5 rounded-full shadow-float text-sm font-semibold transition-colors ${
           hhEnabled
             ? "bg-gray-900 text-amber-400"
             : "bg-white text-gray-500"

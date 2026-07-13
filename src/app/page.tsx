@@ -336,8 +336,8 @@ export default function Home() {
         </button>
       )}
 
-      {/* 「このエリアを検索」ボタン（マップドラッグ後・マップ表示時のみ） */}
-      {viewMode === "map" && showSearchBtn && !selectedStore && (
+      {/* 「このエリアを検索」ボタン（マップドラッグ後・マップ表示時のみ・フィルター展開中は非表示） */}
+      {viewMode === "map" && showSearchBtn && !selectedStore && !isFilterOpen && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 flex justify-center">
           <button
             onClick={handleSearchThisArea}
